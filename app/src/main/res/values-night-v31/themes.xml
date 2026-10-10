@@ -9,7 +9,7 @@
     <!-- NOTE: Cannot use "Light." since it hides the terminal scrollbar on the default black background. -->
 
     <!-- TermuxApp DayNight DarkActionBar theme. -->
-    <style name="Theme.TermuxApp.DayNight.DarkActionBar" parent="Theme.Material3.DynamicColors.DayNight">
+    <style name="Theme.TermuxApp.DayNight.DarkActionBar" parent="Theme.Material3Expressive.DynamicColors.DayNight">
         <item name="android:navigationBarColor">@color/background_accent</item>
         <item name="android:enforceNavigationBarContrast">false</item>
     </style>

@@ -6,7 +6,7 @@
     -->
 
     <!-- TermuxApp Light DarkActionBar theme. -->
-    <style name="Theme.TermuxApp.Light.DarkActionBar" parent="Theme.Material3.DynamicColors.Light">
+    <style name="Theme.TermuxApp.Light.DarkActionBar" parent="Theme.Material3Expressive.DynamicColors.Light">
         <item name="android:navigationBarColor">@color/background_accent</item>
         <item name="android:enforceNavigationBarContrast">false</item>
     </style>
@@ -17,7 +17,7 @@
     </style>
 
     <!-- TermuxApp DayNight DarkActionBar theme. -->
-    <style name="Theme.TermuxApp.DayNight.DarkActionBar" parent="Theme.Material3.DynamicColors.DayNight">
+    <style name="Theme.TermuxApp.DayNight.DarkActionBar" parent="Theme.Material3Expressive.DynamicColors.DayNight">
         <item name="android:navigationBarColor">@color/background_accent</item>
         <item name="android:enforceNavigationBarContrast">false</item>
     </style>

@@ -9,7 +9,7 @@
       BaseActivity Light DarkActionBar theme.
       https://github.com/material-components/material-components-android/blob/1.4.0/lib/java/com/google/android/material/theme/res/values/themes.xml#L33
      -->
-    <style name="Theme.BaseActivity.Light.DarkActionBar" parent="Theme.Material3.DynamicColors.Light">
+    <style name="Theme.BaseActivity.Light.DarkActionBar" parent="Theme.Material3Expressive.DynamicColors.Light">
         <!--
          Dialog Themes.
          These MUST be defined for the application `android:theme` so that if dialogs

@@ -496,8 +496,12 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
                 try (InputStream in = new FileInputStream(colorsFile)) {
                     props.load(in);
                 }
+                TerminalColors.COLOR_SCHEME.updateWith(props);
+            } else if (!MonetTerminalColors.applyMonetColors(mActivity)) {
+                // No colors file and Monet unavailable (< API 31 or resolution failed):
+                // reset to the stock xterm scheme.
+                TerminalColors.COLOR_SCHEME.updateWith(props);
             }
-            TerminalColors.COLOR_SCHEME.updateWith(props);
             TerminalSession session = mActivity.getCurrentSession();
             if (session != null && session.getEmulator() != null) {
                 session.getEmulator().mColors.reset();

@@ -190,6 +190,13 @@ Version: 3
 
 ***
 
+## Monet terminal colors
+> On Android 12+, when no `~/.termux/colors.properties` file exists, the terminal 16-color ANSI palette (plus foreground, background and cursor) is derived from the Material You dynamic palettes (`system_accent1/2/3_*` for chromatics, `system_neutral1_*` for grayscale and defaults), following the current night mode. Indexes 16-255 keep stock xterm values.
+>
+> Placing a `colors.properties` file restores full manual control and disables the Monet derivation. Below Android 12 the stock xterm scheme is used.
+
+***
+
 ## Displaying images in Termux
 
 > As described in https://github.com/termux/termux-app/pull/2973, Termux can display images and gifs using sixel and iterm2 protocols.

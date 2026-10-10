@@ -47,6 +47,26 @@ public final class TerminalColorScheme {
         System.arraycopy(DEFAULT_COLORSCHEME, 0, mDefaultColors, 0, TextStyle.NUM_INDEXED_COLORS);
     }
 
+    /**
+     * Set the 16 ANSI colors (indexes 0-15) and the default foreground, background and
+     * cursor colors from a Monet-derived palette. Indexes 16-255 keep the stock xterm values.
+     *
+     * @param ansiColors 16 ARGB colors for indexes 0-15 (black, red, green, yellow, blue,
+     *                   magenta, cyan, white, then their bright variants).
+     * @param foreground Default foreground color ({@link TextStyle#COLOR_INDEX_FOREGROUND}).
+     * @param background Default background color ({@link TextStyle#COLOR_INDEX_BACKGROUND}).
+     * @param cursor     Cursor color ({@link TextStyle#COLOR_INDEX_CURSOR}).
+     */
+    public void updateWithMonetColors(int[] ansiColors, int foreground, int background, int cursor) {
+        if (ansiColors == null || ansiColors.length != 16)
+            throw new IllegalArgumentException("ansiColors must hold exactly 16 colors");
+        reset();
+        System.arraycopy(ansiColors, 0, mDefaultColors, 0, 16);
+        mDefaultColors[TextStyle.COLOR_INDEX_FOREGROUND] = foreground;
+        mDefaultColors[TextStyle.COLOR_INDEX_BACKGROUND] = background;
+        mDefaultColors[TextStyle.COLOR_INDEX_CURSOR] = cursor;
+    }
+
     public void updateWith(Properties props) {
         reset();
         boolean cursorPropExists = false;

@@ -629,7 +629,9 @@ void logd(String l){
             }
             return null;
         }
-        newTermuxSession.getTerminalSession().setBoldWithBright(mProperties.shouldDrawBoldTextWithBrightColors());
+        // Upstream terminal renderer now always draws bold text with bright colors
+        // (see TerminalRenderer: `if (bold && foreColor < 8) foreColor += 8`), so the
+        // Monet `setBoldWithBright` toggle was removed during upstream sync.
         mShellManager.mTermuxSessions.add(newTermuxSession);
         // Remove the execution command from the pending plugin execution commands list since it has
         // now been processed

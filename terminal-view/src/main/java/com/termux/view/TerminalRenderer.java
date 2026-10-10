@@ -24,6 +24,8 @@ public final class TerminalRenderer {
 
     final int mTextSize;
     final Typeface mTypeface;
+    /** Monet true-italic typeface. Currently stored for API compatibility; custom italic rendering TODO. */
+    final Typeface mItalicTypeface;
     private final Paint mTextPaint = new Paint();
 
     /** The width of a single mono spaced character obtained by {@link Paint#measureText(String)} on a single 'X'. */
@@ -38,8 +40,13 @@ public final class TerminalRenderer {
     private final float[] asciiMeasures = new float[127];
 
     public TerminalRenderer(int textSize, Typeface typeface) {
+        this(textSize, typeface, typeface);
+    }
+
+    public TerminalRenderer(int textSize, Typeface typeface, Typeface italicTypeface) {
         mTextSize = textSize;
         mTypeface = typeface;
+        mItalicTypeface = italicTypeface != null ? italicTypeface : typeface;
 
         mTextPaint.setTypeface(typeface);
         mTextPaint.setAntiAlias(true);
@@ -272,5 +279,10 @@ public final class TerminalRenderer {
 
     public int getFontLineSpacing() {
         return mFontLineSpacing;
+    }
+
+    /** Added for Termux-Monet text selection controller compatibility. */
+    public int getFontLineSpacingAndAscent() {
+        return mFontLineSpacingAndAscent;
     }
 }

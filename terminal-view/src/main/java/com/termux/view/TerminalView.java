@@ -523,6 +523,13 @@ public final class TerminalView extends View {
         invalidate();
     }
 
+    /** Monet true-italic support. Currently passes through to renderer for API compatibility. */
+    public void setTypeface(Typeface newTypeface, Typeface newItalicTypeface) {
+        mRenderer = new TerminalRenderer(mRenderer.mTextSize, newTypeface, newItalicTypeface);
+        updateSize();
+        invalidate();
+    }
+
     @Override
     public boolean onCheckIsTextEditor() {
         return true;

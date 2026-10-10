@@ -186,14 +186,9 @@ Version: 3
 ## True italic fonts
 > As described in https://github.com/termux/termux-app/pull/2829, true italic fonts support can be enabled when placing an italic font in `~/.termux/font-italic.ttf`
 >
-> If the file is missing, italic falls back to a skewed (fake-italic) rendering of the regular font. The terminal grid keeps the regular font metrics so mixed regular/italic text stays aligned; italic runs are scaled to fit when the two fonts have different advances.
+> If the file is missing, italic falls back to a skewed (fake-italic) rendering of the regular font.
 
 ***
-
-## Monet terminal colors
-> On Android 12+, when no `~/.termux/colors.properties` file exists, the terminal 16-color ANSI palette (plus foreground, background and cursor) is derived from the Material You dynamic palettes (`system_accent1/2/3_*` for chromatics, `system_neutral1_*` for grayscale and defaults), following the current night mode. Indexes 16-255 keep stock xterm values.
->
-> Placing a `colors.properties` file restores full manual control and disables the Monet derivation. Below Android 12 the stock xterm scheme is used.
 
 ***
 

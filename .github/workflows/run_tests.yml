@@ -1,23 +1,23 @@
-name: Test app
+name: Unit tests
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - android-10
   pull_request:
     branches:
       - master
-
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
+      - android-10
 
 jobs:
   testing:
     runs-on: ubuntu-latest
     steps:
     - name: Clone repository
-      uses: actions/checkout@v4
-    - name: Setup java 17 as required by gradle
-      uses: actions/setup-java@v4
+      uses: actions/checkout@v6
+    - name: Setup java 17
+      uses: actions/setup-java@v5
       with:
         distribution: 'temurin'
         java-version: '17'

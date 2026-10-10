@@ -1,6 +1,7 @@
 package com.termux.shared.termux;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import com.termux.shared.shell.command.ExecutionCommand;
 import com.termux.shared.shell.command.ExecutionCommand.Runner;
 import java.io.File;
@@ -9,7 +10,7 @@ import java.util.Formatter;
 import java.util.List;
 
 /*
- * Version: v0.52.0
+ * Version: v0.53.0
  * SPDX-License-Identifier: MIT
  *
  * Changelog
@@ -281,6 +282,10 @@ import java.util.List;
  *          `TERMUX_BACKGROUND_IMAGE_PATH`, `TERMUX_BACKGROUND_IMAGE_FILE`,
  *          `TERMUX_BACKGROUND_IMAGE_PORTRAIT_PATH`, `TERMUX_BACKGROUND_IMAGE_PORTRAIT_FILE`,
  *          `TERMUX_BACKGROUND_IMAGE_LANDSCAPE_PATH`, and `TERMUX_BACKGROUND_IMAGE_LANDSCAPE_FILE`.
+ *
+ * - 0.54.0 (2025-01-12)
+ *      - Renamed `TERMUX_API`, `TERMUX_STYLING`, `TERMUX_TASKER`, `TERMUX_WIDGET` classes with `_APP` suffix added.
+ *      - Added `TERMUX_*_MAIN_ACTIVITY_NAME` and `TERMUX_*_LAUNCHER_ACTIVITY_NAME` constants to each app class.
  */
 /**
  * A class that defines shared constants of the Termux app and its plugins.
@@ -1957,13 +1962,37 @@ public final class TermuxConstants {
     /**
      * Termux:API app constants.
      */
-    public static final class TERMUX_API {
+    public static final class TERMUX_API_APP {
 
         /**
          * Termux:API app core activity name.
+         * @deprecated For backward compatibility with old Termux:API app. Use TERMUX_API_MAIN_ACTIVITY_NAME.
          */
-        // Default: "com.termux.tasker.activities.TermuxAPIActivity"
+        // Default: "com.termux.api.activities.TermuxAPIActivity"
         public static final String TERMUX_API_ACTIVITY_NAME = TERMUX_API_PACKAGE_NAME + ".activities.TermuxAPIActivity";
+        /** Termux:API app main activity name. */
+        public static final String TERMUX_API_MAIN_ACTIVITY_NAME = TERMUX_API_PACKAGE_NAME + ".activities.TermuxAPIMainActivity"; // Default: "com.termux.api.activities.TermuxAPIMainActivity"
+
+        /** Termux:API app launcher activity name. This is an `activity-alias` for {@link #TERMUX_API_MAIN_ACTIVITY_NAME} used for launchers with {@link Intent#CATEGORY_LAUNCHER}. */
+        public static final String TERMUX_API_LAUNCHER_ACTIVITY_NAME = TERMUX_API_PACKAGE_NAME + ".activities.TermuxAPILauncherActivity"; // Default: "com.termux.api.activities.TermuxAPILauncherActivity"
+
+    }
+
+
+
+
+
+    /**
+     * Termux:Boot app constants.
+     */
+    public static final class TERMUX_BOOT_APP {
+
+        /** Termux:Boot app main activity name. */
+        public static final String TERMUX_BOOT_MAIN_ACTIVITY_NAME = TERMUX_BOOT_PACKAGE_NAME + ".activities.TermuxBootMainActivity"; // Default: "com.termux.boot.activities.TermuxBootMainActivity"
+
+        /** Termux:Boot app launcher activity name. This is an `activity-alias` for {@link #TERMUX_BOOT_MAIN_ACTIVITY_NAME} used for launchers with {@link Intent#CATEGORY_LAUNCHER}. */
+        public static final String TERMUX_BOOT_LAUNCHER_ACTIVITY_NAME = TERMUX_BOOT_PACKAGE_NAME + ".activities.TermuxBootLauncherActivity"; // Default: "com.termux.boot.activities.TermuxBootLauncherActivity"
+
     }
 
     /**
@@ -1983,11 +2012,11 @@ public final class TermuxConstants {
      */
     public static final class TERMUX_FLOAT_APP {
 
-        /**
-         * Termux:Float app core service name.
-         */
-        // Default: "com.termux.window.TermuxFloatService"
-        public static final String TERMUX_FLOAT_SERVICE_NAME = TERMUX_FLOAT_PACKAGE_NAME + ".TermuxFloatService";
+        /** Termux:Float app core activity name. */
+        public static final String TERMUX_FLOAT_ACTIVITY_NAME = TERMUX_FLOAT_PACKAGE_NAME + ".TermuxFloatActivity"; // Default: "com.termux.window.TermuxFloatActivity"
+
+        /** Termux:Float app core service name. */
+        public static final String TERMUX_FLOAT_SERVICE_NAME = TERMUX_FLOAT_PACKAGE_NAME + ".TermuxFloatService"; // Default: "com.termux.window.TermuxFloatService"
 
         /**
          * Termux:Float app core service.
@@ -2017,43 +2046,60 @@ public final class TermuxConstants {
     /**
      * Termux:Styling app constants.
      */
-    public static final class TERMUX_STYLING {
+    public static final class TERMUX_STYLING_APP {
 
-        /**
-         * Termux:Styling app core activity name.
-         */
-        // Default: "com.termux.styling.TermuxStyleActivity"
-        public static final String TERMUX_STYLING_ACTIVITY_NAME = TERMUX_STYLING_PACKAGE_NAME + ".TermuxStyleActivity";
+        /** Termux:Styling app core activity name. */
+        public static final String TERMUX_STYLING_ACTIVITY_NAME = TERMUX_STYLING_PACKAGE_NAME + ".TermuxStyleActivity"; // Default: "com.termux.styling.TermuxStyleActivity"
+
+
+        /** Termux:Styling app main activity name. */
+        public static final String TERMUX_STYLING_MAIN_ACTIVITY_NAME = TERMUX_STYLING_PACKAGE_NAME + ".activities.TermuxStylingMainActivity"; // Default: "com.termux.styling.activities.TermuxStylingMainActivity"
+
+        /** Termux:Styling app launcher activity name. This is an `activity-alias` for {@link #TERMUX_STYLING_MAIN_ACTIVITY_NAME} used for launchers with {@link Intent#CATEGORY_LAUNCHER}. */
+        public static final String TERMUX_STYLING_LAUNCHER_ACTIVITY_NAME = TERMUX_STYLING_PACKAGE_NAME + ".activities.TermuxStylingLauncherActivity"; // Default: "com.termux.styling.activities.TermuxStylingLauncherActivity"
+
     }
 
     /**
      * Termux:Tasker app constants.
      */
-    public static final class TERMUX_TASKER {
+    public static final class TERMUX_TASKER_APP {
 
         /**
          * Termux:Tasker app core activity name.
+         * @deprecated For backward compatibility. Use TERMUX_TASKER_MAIN_ACTIVITY_NAME.
          */
-        // Default: "com.termux.tasker.activities.TermuxTaskerActivity"
         public static final String TERMUX_TASKER_ACTIVITY_NAME = TERMUX_TASKER_PACKAGE_NAME + ".activities.TermuxTaskerActivity";
+        /** Termux:Tasker app main activity name. */
+        public static final String TERMUX_TASKER_MAIN_ACTIVITY_NAME = TERMUX_TASKER_PACKAGE_NAME + ".activities.TermuxTaskerMainActivity"; // Default: "com.termux.tasker.activities.TermuxTaskerMainActivity"
+
+        /** Termux:Tasker app launcher activity name. This is an `activity-alias` for {@link #TERMUX_TASKER_MAIN_ACTIVITY_NAME} used for launchers with {@link Intent#CATEGORY_LAUNCHER}. */
+        public static final String TERMUX_TASKER_LAUNCHER_ACTIVITY_NAME = TERMUX_TASKER_PACKAGE_NAME + ".activities.TermuxTaskerLauncherActivity"; // Default: "com.termux.tasker.activities.TermuxTaskerLauncherActivity"
+
     }
 
     /**
      * Termux:Widget app constants.
      */
-    public static final class TERMUX_WIDGET {
+    public static final class TERMUX_WIDGET_APP {
 
         /**
          * Termux:Widget app core activity name.
+         * @deprecated For backward compatibility. Use TERMUX_WIDGET_MAIN_ACTIVITY_NAME.
          */
-        // Default: "com.termux.widget.activities.TermuxWidgetActivity"
         public static final String TERMUX_WIDGET_ACTIVITY_NAME = TERMUX_WIDGET_PACKAGE_NAME + ".activities.TermuxWidgetActivity";
+        /** Termux:Widget app main activity name. */
+        public static final String TERMUX_WIDGET_MAIN_ACTIVITY_NAME = TERMUX_WIDGET_PACKAGE_NAME + ".activities.TermuxWidgetMainActivity"; // Default: "com.termux.widget.activities.TermuxWidgetMainActivity"
+
+        /** Termux:Widget app launcher activity name. This is an `activity-alias` for {@link #TERMUX_WIDGET_MAIN_ACTIVITY_NAME} used for launchers with {@link Intent#CATEGORY_LAUNCHER}. */
+        public static final String TERMUX_WIDGET_LAUNCHER_ACTIVITY_NAME = TERMUX_WIDGET_PACKAGE_NAME + ".activities.TermuxWidgetLauncherActivity"; // Default: "com.termux.widget.activities.TermuxWidgetLauncherActivity"
 
         /**
          *  Intent {@code String} extra for the token of the Termux:Widget app shortcuts.
          */
         // Default: "com.termux.shortcut.token"
         public static final String EXTRA_TOKEN_NAME = TERMUX_PACKAGE_NAME + ".shortcut.token";
+
 
         /**
          * Termux:Widget app {@link android.appwidget.AppWidgetProvider} class.

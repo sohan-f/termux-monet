@@ -15,6 +15,7 @@ ext {
 android {
     namespace "com.termux"
     compileSdkVersion project.properties.compileSdkVersion.toInteger()
+    ndkVersion = System.getenv("JITPACK_NDK_VERSION") ?: project.properties.ndkVersion
     def appVersionName = System.getenv("TERMUX_APP_VERSION_NAME") ?: ""
     def apkVersionTag = System.getenv("TERMUX_APK_VERSION_TAG") ?: ""
     def splitAPKsForDebugBuilds = System.getenv("TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS") ?: "1"
@@ -105,10 +106,14 @@ android {
             outputFileName = new File("termux-app_" + (apkVersionTag ? apkVersionTag : project.ext.packageVariant + "-" + variant.buildType.name) + "_" + (abi ? abi : "universal") + ".apk")
         }
     }
+
+    buildFeatures {
+        buildConfig true
+    }
 }
 
 dependencies {
-    implementation "androidx.annotation:annotation:1.8.0"
+    implementation "androidx.annotation:annotation:1.9.0"
     implementation "androidx.core:core:1.13.1"
     implementation "androidx.drawerlayout:drawerlayout:1.2.0"
     implementation "androidx.preference:preference:1.2.1"

@@ -2,9 +2,13 @@ package com.termux.shared.models;
 
 import android.graphics.Color;
 import android.graphics.Typeface;
+
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
+
 import com.termux.shared.activities.TextIOActivity;
 import com.termux.shared.data.DataUtils;
+
 import java.io.Serializable;
 
 /**
@@ -16,114 +20,86 @@ import java.io.Serializable;
  */
 public class TextIOInfo implements Serializable {
 
+    /**
+     * Explicitly define `serialVersionUID` to prevent exceptions on deserialization.
+     *
+     * Like when calling `Bundle.getSerializable()` on Android.
+     * `android.os.BadParcelableException: Parcelable encountered IOException reading a Serializable object` (name = <class_name>)
+     * `java.io.InvalidClassException: <class_name>; local class incompatible`
+     *
+     * The `@Keep` annotation is necessary to prevent the field from being removed by proguard when
+     * app is compiled, even if its kept during library compilation.
+     *
+     * **See Also:**
+     * - https://docs.oracle.com/javase/8/docs/platform/serialization/spec/version.html#a6678
+     * - https://docs.oracle.com/javase/8/docs/platform/serialization/spec/class.html#a4100
+     */
+    @Keep
+    private static final long serialVersionUID = 1L;
+
+
+
     public static final int GENERAL_DATA_SIZE_LIMIT_IN_BYTES = 1000;
-
     public static final int LABEL_SIZE_LIMIT_IN_BYTES = 4000;
+    public static final int TEXT_SIZE_LIMIT_IN_BYTES = 100000 - GENERAL_DATA_SIZE_LIMIT_IN_BYTES - LABEL_SIZE_LIMIT_IN_BYTES; // < 100KB
 
-    // < 100KB
-    public static final int TEXT_SIZE_LIMIT_IN_BYTES = 100000 - GENERAL_DATA_SIZE_LIMIT_IN_BYTES - LABEL_SIZE_LIMIT_IN_BYTES;
-
-    /**
-     * The action for which {@link TextIOActivity} will be started.
-     */
+    /** The action for which {@link TextIOActivity} will be started. */
     private final String mAction;
-
-    /**
-     * The internal app component that is will start the {@link TextIOActivity}.
-     */
+    /** The internal app component that is will start the {@link TextIOActivity}. */
     private final String mSender;
 
-    /**
-     * The activity title.
-     */
+    /** The activity title. */
     private String mTitle;
 
-    /**
-     * If back button should be shown in {@link android.app.ActionBar}.
-     */
+    /** If back button should be shown in {@link android.app.ActionBar}. */
     private boolean mShowBackButtonInActionBar = false;
 
-    /**
-     * If label is enabled.
-     */
-    private boolean mLabelEnabled = false;
 
+    /** If label is enabled. */
+    private boolean mLabelEnabled = false;
     /**
      * The label of text input set in {@link android.widget.TextView} that can be updated by user.
      * Max allowed length is {@link #LABEL_SIZE_LIMIT_IN_BYTES}.
      */
     private String mLabel;
-
-    /**
-     * The text size of label. Defaults to 14sp.
-     */
+    /** The text size of label. Defaults to 14sp. */
     private int mLabelSize = 14;
-
-    /**
-     * The text color of label. Defaults to {@link Color#BLACK}.
-     */
+    /** The text color of label. Defaults to {@link Color#BLACK}. */
     private int mLabelColor = Color.BLACK;
-
-    /**
-     * The {@link Typeface} family  of label. Defaults to "sans-serif".
-     */
+    /** The {@link Typeface} family  of label. Defaults to "sans-serif". */
     private String mLabelTypeFaceFamily = "sans-serif";
-
-    /**
-     * The {@link Typeface} style  of label. Defaults to {@link Typeface#BOLD}.
-     */
+    /** The {@link Typeface} style  of label. Defaults to {@link Typeface#BOLD}. */
     private int mLabelTypeFaceStyle = Typeface.BOLD;
+
 
     /**
      * The text of text input set in {@link android.widget.EditText} that can be updated by user.
      * Max allowed length is {@link #TEXT_SIZE_LIMIT_IN_BYTES}.
      */
     private String mText;
-
-    /**
-     * The text size for text. Defaults to 12sp.
-     */
+    /** The text size for text. Defaults to 12sp. */
     private int mTextSize = 12;
-
-    /**
-     * The text size for text. Defaults to {@link #TEXT_SIZE_LIMIT_IN_BYTES}.
-     */
+    /** The text size for text. Defaults to {@link #TEXT_SIZE_LIMIT_IN_BYTES}. */
     private int mTextLengthLimit = TEXT_SIZE_LIMIT_IN_BYTES;
-
-    /**
-     * The text color of text. Defaults to {@link Color#BLACK}.
-     */
+    /** The text color of text. Defaults to {@link Color#BLACK}. */
     private int mTextColor = Color.BLACK;
-
-    /**
-     * The {@link Typeface} family for text. Defaults to "sans-serif".
-     */
+    /** The {@link Typeface} family for text. Defaults to "sans-serif". */
     private String mTextTypeFaceFamily = "sans-serif";
-
-    /**
-     * The {@link Typeface} style for text. Defaults to {@link Typeface#NORMAL}.
-     */
+    /** The {@link Typeface} style for text. Defaults to {@link Typeface#NORMAL}. */
     private int mTextTypeFaceStyle = Typeface.NORMAL;
-
-    /**
-     * If horizontal scrolling should be enabled for text.
-     */
+    /** If horizontal scrolling should be enabled for text. */
     private boolean mTextHorizontallyScrolling = false;
-
-    /**
-     * If character usage should be enabled for text.
-     */
+    /** If character usage should be enabled for text. */
     private boolean mShowTextCharacterUsage = false;
-
-    /**
-     * If editing text should be disabled so that text acts like its in a {@link android.widget.TextView}.
-     */
+    /** If editing text should be disabled so that text acts like its in a {@link android.widget.TextView}. */
     private boolean mEditingTextDisabled = false;
+
 
     public TextIOInfo(@NonNull String action, @NonNull String sender) {
         mAction = action;
         mSender = sender;
     }
+
 
     public String getAction() {
         return mAction;
@@ -132,6 +108,7 @@ public class TextIOInfo implements Serializable {
     public String getSender() {
         return mSender;
     }
+
 
     public String getTitle() {
         return mTitle;
@@ -148,6 +125,7 @@ public class TextIOInfo implements Serializable {
     public void setShowBackButtonInActionBar(boolean showBackButtonInActionBar) {
         mShowBackButtonInActionBar = showBackButtonInActionBar;
     }
+
 
     public boolean isLabelEnabled() {
         return mLabelEnabled;
@@ -197,6 +175,7 @@ public class TextIOInfo implements Serializable {
     public void setLabelTypeFaceStyle(int labelTypeFaceStyle) {
         mLabelTypeFaceStyle = labelTypeFaceStyle;
     }
+
 
     public String getText() {
         return mText;
@@ -271,4 +250,5 @@ public class TextIOInfo implements Serializable {
     public void setEditingTextDisabled(boolean editingTextDisabled) {
         mEditingTextDisabled = editingTextDisabled;
     }
+
 }

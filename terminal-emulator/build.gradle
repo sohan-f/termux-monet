@@ -36,12 +36,20 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     testOptions {
         unitTests.returnDefaultValues = true
+    }
+
+    publishing {
+        multipleVariants {
+            withSourcesJar()
+            withJavadocJar()
+            allVariants()
+        }
     }
 }
 
@@ -51,12 +59,8 @@ tasks.withType(Test) {
     }
 }
 
-tasks.withType(JavaCompile) {
-    options.compilerArgs << "-Xlint:deprecation"
-}
-
 dependencies {
-    implementation "androidx.annotation:annotation:1.8.0"
+    implementation "androidx.annotation:annotation:1.9.0"
     testImplementation "junit:junit:4.13.2"
 }
 
@@ -70,7 +74,7 @@ afterEvaluate {
         publications {
             // Creates a Maven publication called "release".
             release(MavenPublication) {
-                from components.findByName('release')
+                from components.default
                 groupId = 'com.termux'
                 artifactId = 'terminal-emulator'
                 version = '0.118.0'

@@ -2,6 +2,11 @@ name: Build nightly
 
 on:
   workflow_dispatch:
+    inputs:
+      build_abi:
+        description: "ABI(s) to build (comma-separated from x86, x86_64, armeabi-v7a, arm64-v8a, aliases like arm64 allowed, or 'all')"
+        required: false
+        default: "all"
   pull_request:
     branches:
       - master
@@ -38,6 +43,7 @@ jobs:
         shell: bash {0}
         env:
           PACKAGE_VARIANT: ${{ matrix.package_variant }}
+          BUILD_ABI: ${{ inputs.build_abi }}
         run: |
           exit_on_error() { echo "$1"; exit 1; }
 
@@ -68,12 +74,50 @@ jobs:
           export TERMUX_APP_VERSION_NAME="${RELEASE_VERSION_NAME/v/}" # Used by app/build.gradle
           export TERMUX_APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
           export TERMUX_PACKAGE_VARIANT="${{ env.PACKAGE_VARIANT }}" # Used by app/build.gradle
+          if [ -n "${BUILD_ABI:-}" ] && [ "$BUILD_ABI" != "all" ]; then
+            export TERMUX_BUILD_ABI="$BUILD_ABI" # Used by app/native-entrypoint/terminal-emulator build.gradle to build for target arch(s) only
+            echo "Building only for ABI(s): $TERMUX_BUILD_ABI"
+          fi
           if ! ./gradlew assembleDebug; then
             exit_on_error "Build failed for '$APK_VERSION_TAG' build."
           fi
 
           echo "Validating APKs"
-          for abi in universal arm64-v8a armeabi-v7a x86_64 x86; do
+          # Canonicalize requested ABIs the same way build.gradle does so that
+          # aliases (e.g. arm64) and subsets validate correctly. A universal APK
+          # is only produced when more than one ABI is built.
+          canonical_abi() {
+            case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | xargs)" in
+              arm64|aarch64|arm64-v8a) printf 'arm64-v8a' ;;
+              arm|arm32|armeabi|armeabi-v7a|armv7) printf 'armeabi-v7a' ;;
+              x86_64|x64|x86-64) printf 'x86_64' ;;
+              x86|i386|i686) printf 'x86' ;;
+              *) echo "Invalid ABI '$1'. Valid values are 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a' (aliases 'arm64', 'arm', 'x64' allowed), or 'all'." >&2; return 1 ;;
+            esac
+          }
+          EXPECTED_ABIS=""
+          if [ -z "${BUILD_ABI:-}" ] || [ "$BUILD_ABI" = "all" ] || [ "$BUILD_ABI" = "universal" ] || [ "$BUILD_ABI" = "*" ]; then
+            EXPECTED_ABIS="universal arm64-v8a armeabi-v7a x86_64 x86"
+          else
+            SEEN=""
+            OLD_IFS="$IFS"; IFS=","
+            # shellcheck disable=SC2162
+            for abi in $BUILD_ABI; do
+              c_abi="$(canonical_abi "$abi")" || exit 1
+              case " $SEEN " in *" $c_abi "*) ;; *) SEEN="$SEEN $c_abi";; esac
+            done
+            IFS="$OLD_IFS"
+            # Canonical order for reproducibility (same order as build.gradle).
+            for abi in x86 x86_64 armeabi-v7a arm64-v8a; do
+              case " $SEEN " in *" $abi "*) EXPECTED_ABIS="$EXPECTED_ABIS $abi";; esac
+            done
+            EXPECTED_ABIS="$(printf '%s' "$EXPECTED_ABIS" | xargs)"
+            if [ "$(printf '%s' "$EXPECTED_ABIS" | wc -w)" -gt 1 ]; then
+              EXPECTED_ABIS="universal $EXPECTED_ABIS"
+            fi
+          fi
+          echo "Expecting APKs for: $EXPECTED_ABIS"
+          for abi in $EXPECTED_ABIS; do
             if ! test -f "$APK_DIR_PATH/${APK_BASENAME_PREFIX}_$abi.apk"; then
               files_found="$(ls "$APK_DIR_PATH")"
               exit_on_error "Failed to find built APK at '$APK_DIR_PATH/${APK_BASENAME_PREFIX}_$abi.apk'. Files found: "$'\n'"$files_found"
@@ -81,13 +125,7 @@ jobs:
           done
 
           echo "Generating sha25sums file"
-          if ! (cd "$APK_DIR_PATH"; sha256sum \
-            "${APK_BASENAME_PREFIX}_universal.apk" \
-            "${APK_BASENAME_PREFIX}_arm64-v8a.apk" \
-            "${APK_BASENAME_PREFIX}_armeabi-v7a.apk" \
-            "${APK_BASENAME_PREFIX}_x86_64.apk" \
-            "${APK_BASENAME_PREFIX}_x86.apk" \
-            > "${APK_BASENAME_PREFIX}_sha256sums"); then
+          if ! (cd "$APK_DIR_PATH"; for abi in $EXPECTED_ABIS; do printf '%s\n' "${APK_BASENAME_PREFIX}_$abi.apk"; done | xargs sha256sum > "${APK_BASENAME_PREFIX}_sha256sums"); then
             exit_on_error "Generate sha25sums failed for '$APK_VERSION_TAG' release."
           fi
 
@@ -95,6 +133,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_universal
+          if-no-files-found: warn
           path: |
             ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}_universal.apk
             ${{ env.APK_DIR_PATH }}/output-metadata.json
@@ -103,6 +142,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_arm64-v8a
+          if-no-files-found: warn
           path: |
             ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}_arm64-v8a.apk
             ${{ env.APK_DIR_PATH }}/output-metadata.json
@@ -111,6 +151,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_armeabi-v7a
+          if-no-files-found: warn
           path: |
             ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}_armeabi-v7a.apk
             ${{ env.APK_DIR_PATH }}/output-metadata.json
@@ -119,6 +160,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_x86_64
+          if-no-files-found: warn
           path: |
             ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}_x86_64.apk
             ${{ env.APK_DIR_PATH }}/output-metadata.json
@@ -127,6 +169,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_x86
+          if-no-files-found: warn
           path: |
             ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}_x86.apk
             ${{ env.APK_DIR_PATH }}/output-metadata.json

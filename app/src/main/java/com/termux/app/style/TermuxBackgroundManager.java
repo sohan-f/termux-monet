@@ -4,10 +4,16 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowInsetsController;
+import android.view.WindowManager;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContract;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -24,6 +30,7 @@ import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.settings.preferences.TermuxAppSharedPreferences;
 import com.termux.shared.view.ViewUtils;
+import com.termux.terminal.TerminalColors;
 import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TextStyle;
 import java.util.concurrent.ExecutorService;
@@ -225,7 +232,9 @@ public class TermuxBackgroundManager {
             return;
         TerminalSession session = mActivity.getCurrentSession();
         if (session != null && session.getEmulator() != null) {
-            mActivity.getWindow().getDecorView().setBackgroundColor(session.getEmulator().mColors.mCurrentColors[TextStyle.COLOR_INDEX_BACKGROUND]);
+            int backgroundColor = session.getEmulator().mColors.mCurrentColors[TextStyle.COLOR_INDEX_BACKGROUND];
+            mActivity.getWindow().getDecorView().setBackgroundColor(backgroundColor);
+            updateStatusBar(false, backgroundColor);
         }
     }
 
@@ -241,7 +250,10 @@ public class TermuxBackgroundManager {
                 if (isImageFilesExist(mActivity, true)) {
                     Drawable drawable = ImageUtils.getDrawable(imagePath);
                     ImageUtils.addOverlay(drawable, mActivity.getProperties().getBackgroundOverlayColor());
-                    handler.post(() -> mActivity.getWindow().getDecorView().setBackground(drawable));
+                    handler.post(() -> {
+                        mActivity.getWindow().getDecorView().setBackground(drawable);
+                        updateStatusBar(true, 0);
+                    });
                 } else {
                     Logger.logErrorAndShowToast(mActivity, LOG_TAG, mActivity.getString(R.string.error_background_image_loading_failed));
                     // Image files are unable to load so set background to solid color and notify update.
@@ -255,6 +267,62 @@ public class TermuxBackgroundManager {
             // Since loading of image is failed, Set background to solid color.
             updateBackgroundColor();
             notifyBackgroundUpdated(false);
+        }
+    }
+
+    /**
+     * Sync the status bar with the terminal background.
+     *
+     * <p>
+     * When a background image is set, the status bar is made transparent so the image
+     * shows through it. Otherwise the status bar is painted with the terminal background
+     * color so it blends seamlessly with the terminal. The {@code FLAG_TRANSLUCENT_STATUS}
+     * coming from the theme is cleared in both cases since it forces the system scrim
+     * and ignores {@link Window#setStatusBarColor(int)}.
+     * </p>
+     *
+     * <p>Must be called on the main thread.</p>
+     *
+     * @param imageEnabled    Whether the terminal background is currently an image.
+     * @param backgroundColor Terminal background color, used when {@code imageEnabled} is false.
+     */
+    private void updateStatusBar(boolean imageEnabled, int backgroundColor) {
+        Window window = mActivity.getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        if (imageEnabled) {
+            window.setStatusBarColor(Color.TRANSPARENT);
+        } else {
+            window.setStatusBarColor(backgroundColor);
+            setLightStatusBarIcons(window,
+                TerminalColors.getPerceivedBrightnessOfColor(backgroundColor) >= 130);
+        }
+    }
+
+    /**
+     * Toggle dark status bar icons for light backgrounds and vice versa, using the same
+     * brightness threshold as the terminal cursor color logic.
+     */
+    private static void setLightStatusBarIcons(Window window, boolean lightBackground) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller == null)
+                return;
+            if (lightBackground) {
+                controller.setSystemBarsAppearance(
+                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+            } else {
+                controller.setSystemBarsAppearance(0,
+                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+            }
+        } else {
+            View decorView = window.getDecorView();
+            int flags = decorView.getSystemUiVisibility();
+            if (lightBackground)
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            else
+                flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            decorView.setSystemUiVisibility(flags);
         }
     }
 

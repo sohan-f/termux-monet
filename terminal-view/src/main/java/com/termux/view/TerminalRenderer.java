@@ -24,9 +24,10 @@ public final class TerminalRenderer {
 
     final int mTextSize;
     final Typeface mTypeface;
-    /** Monet true-italic typeface. Currently stored for API compatibility; custom italic rendering TODO. */
+    /** Monet true-italic typeface used for {@link TextStyle#CHARACTER_ATTRIBUTE_ITALIC} runs. */
     final Typeface mItalicTypeface;
     private final Paint mTextPaint = new Paint();
+    private final Paint mItalicTextPaint = new Paint();
 
     /** The width of a single mono spaced character obtained by {@link Paint#measureText(String)} on a single 'X'. */
     final float mFontWidth;
@@ -38,6 +39,7 @@ public final class TerminalRenderer {
     final int mFontLineSpacingAndAscent;
 
     private final float[] asciiMeasures = new float[127];
+    private final float[] asciiMeasuresItalic = new float[127];
 
     public TerminalRenderer(int textSize, Typeface typeface) {
         this(textSize, typeface, typeface);
@@ -61,6 +63,18 @@ public final class TerminalRenderer {
         for (int i = 0; i < asciiMeasures.length; i++) {
             sb.setCharAt(0, (char) i);
             asciiMeasures[i] = mTextPaint.measureText(sb, 0, 1);
+        }
+
+        // Grid metrics stay based on the regular typeface so mixed regular/italic
+        // text keeps column alignment. The italic paint is measured separately so
+        // italic runs can be scaled to fit the same grid cell when the two fonts
+        // have different advances (see drawTextRun scaling logic).
+        mItalicTextPaint.setTypeface(mItalicTypeface);
+        mItalicTextPaint.setAntiAlias(true);
+        mItalicTextPaint.setTextSize(textSize);
+        for (int i = 0; i < asciiMeasuresItalic.length; i++) {
+            sb.setCharAt(0, (char) i);
+            asciiMeasuresItalic[i] = mItalicTextPaint.measureText(sb, 0, 1);
         }
     }
 
@@ -137,8 +151,16 @@ public final class TerminalRenderer {
                 // This could happen for some fonts which are not truly monospace, or for more exotic characters such as
                 // smileys which android font renders as wide.
                 // If this is detected, we draw this code point scaled to match what wcwidth() expects.
-                final float measuredCodePointWidth = (codePoint < asciiMeasures.length) ? asciiMeasures[codePoint] : mTextPaint.measureText(line,
-                    currentCharIndex, charsForCodePoint);
+                // Italic code points are measured with the italic typeface so true-italic
+                // fonts with different advances are still scaled to fit the same grid.
+                final boolean codePointItalic = (style & TextStyle.CHARACTER_ATTRIBUTE_ITALIC) != 0;
+                final float measuredCodePointWidth;
+                if (codePoint < asciiMeasures.length) {
+                    measuredCodePointWidth = codePointItalic ? asciiMeasuresItalic[codePoint] : asciiMeasures[codePoint];
+                } else {
+                    measuredCodePointWidth = (codePointItalic ? mItalicTextPaint : mTextPaint).measureText(line,
+                        currentCharIndex, charsForCodePoint);
+                }
                 final boolean fontWidthMismatch = Math.abs(measuredCodePointWidth / mFontWidth - codePointWcWidth) > 0.01;
 
                 if (style != lastRunStyle || insideCursor != lastRunInsideCursor || insideSelection != lastRunInsideSelection || fontWidthMismatch || lastRunFontWidthMismatch) {
@@ -232,11 +254,13 @@ public final class TerminalRenderer {
         if (backColor != palette[TextStyle.COLOR_INDEX_BACKGROUND]) {
             // Only draw non-default background.
             mTextPaint.setColor(backColor);
+            mItalicTextPaint.setColor(backColor);
             canvas.drawRect(left, y - mFontLineSpacingAndAscent + mFontAscent, right, y, mTextPaint);
         }
 
         if (cursor != 0) {
             mTextPaint.setColor(cursor);
+            mItalicTextPaint.setColor(cursor);
             float cursorHeight = mFontLineSpacingAndAscent - mFontAscent;
             if (cursorStyle == TerminalEmulator.TERMINAL_CURSOR_STYLE_UNDERLINE) cursorHeight /= 4.f;
             else if (cursorStyle == TerminalEmulator.TERMINAL_CURSOR_STYLE_BAR) right -= (((right - left) * 3) / 4.f);
@@ -256,17 +280,22 @@ public final class TerminalRenderer {
                 foreColor = 0xFF000000 + (red << 16) + (green << 8) + blue;
             }
 
-            mTextPaint.setFakeBoldText(bold);
-            mTextPaint.setUnderlineText(underline);
-            mTextPaint.setTextSkewX(italic ? -0.35f : 0.f);
-            mTextPaint.setStrikeThruText(strikeThrough);
-            mTextPaint.setColor(foreColor);
+            // True-italic support (termux-app#2829): use the custom italic typeface
+            // when set, falling back to fake skew only when no separate italic font
+            // was provided (both typefaces are the same object).
+            final boolean useTrueItalic = italic && !mItalicTypeface.equals(mTypeface);
+            final Paint textPaint = italic ? mItalicTextPaint : mTextPaint;
+            textPaint.setFakeBoldText(bold);
+            textPaint.setUnderlineText(underline);
+            textPaint.setTextSkewX(!italic ? 0.f : (useTrueItalic ? 0.f : -0.35f));
+            textPaint.setStrikeThruText(strikeThrough);
+            textPaint.setColor(foreColor);
 
             // The text alignment is the default Paint.Align.LEFT.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                canvas.drawTextRun(text, startCharIndex, runWidthChars, startCharIndex, runWidthChars, left, y - mFontLineSpacingAndAscent, false, mTextPaint);
+                canvas.drawTextRun(text, startCharIndex, runWidthChars, startCharIndex, runWidthChars, left, y - mFontLineSpacingAndAscent, false, textPaint);
             } else {
-                canvas.drawText(text, startCharIndex, runWidthChars, left, y - mFontLineSpacingAndAscent, mTextPaint);
+                canvas.drawText(text, startCharIndex, runWidthChars, left, y - mFontLineSpacingAndAscent, textPaint);
             }
         }
 

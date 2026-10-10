@@ -186,7 +186,7 @@ Version: 3
 ## True italic fonts
 > As described in https://github.com/termux/termux-app/pull/2829, true italic fonts support can be enabled when placing an italic font in `~/.termux/font-italic.ttf`
 >
-> Note: after the upstream re-sync, the custom italic typeface is loaded but custom italic glyph rendering is not yet re-implemented (italic falls back to the default typeface). See `TerminalRenderer`/`TerminalView.setTypeface()`.
+> If the file is missing, italic falls back to a skewed (fake-italic) rendering of the regular font. The terminal grid keeps the regular font metrics so mixed regular/italic text stays aligned; italic runs are scaled to fit when the two fonts have different advances.
 
 ***
 

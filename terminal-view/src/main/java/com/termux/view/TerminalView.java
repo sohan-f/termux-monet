@@ -513,7 +513,11 @@ public final class TerminalView extends View {
      * @param textSize the new font size, in density-independent pixels.
      */
     public void setTextSize(int textSize) {
-        mRenderer = new TerminalRenderer(textSize, mRenderer == null ? Typeface.MONOSPACE : mRenderer.mTypeface);
+        if (mRenderer == null) {
+            mRenderer = new TerminalRenderer(textSize, Typeface.MONOSPACE, Typeface.MONOSPACE);
+        } else {
+            mRenderer = new TerminalRenderer(textSize, mRenderer.mTypeface, mRenderer.mItalicTypeface);
+        }
         updateSize();
     }
 
@@ -523,7 +527,7 @@ public final class TerminalView extends View {
         invalidate();
     }
 
-    /** Monet true-italic support. Currently passes through to renderer for API compatibility. */
+    /** Monet true-italic support (`~/.termux/font-italic.ttf`, see README). */
     public void setTypeface(Typeface newTypeface, Typeface newItalicTypeface) {
         mRenderer = new TerminalRenderer(mRenderer.mTextSize, newTypeface, newItalicTypeface);
         updateSize();

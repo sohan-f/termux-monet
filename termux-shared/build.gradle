@@ -103,6 +103,12 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
 
+    testOptions {
+        // Allow plain-JVM unit tests to call into android.jar stubs that only
+        // log (e.g. Logger in error fallback paths); same as terminal-emulator.
+        unitTests.returnDefaultValues = true
+    }
+
     externalNativeBuild {
         ndkBuild {
             path file('src/main/cpp/Android.mk')

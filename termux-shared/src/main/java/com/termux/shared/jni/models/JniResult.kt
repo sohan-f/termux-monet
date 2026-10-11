@@ -1,8 +1,8 @@
-package com.termux.shared.jni.models;
+package com.termux.shared.jni.models
 
-import androidx.annotation.Keep;
-import androidx.annotation.NonNull;
-import com.termux.shared.logger.Logger;
+import androidx.annotation.Keep
+import androidx.annotation.NonNull
+import com.termux.shared.logger.Logger
 
 /**
  * A class that can be used to return result for JNI calls with support for multiple fields to easily
@@ -12,13 +12,14 @@ import com.termux.shared.logger.Logger;
  * https://developer.android.com/training/articles/perf-jni
  */
 @Keep
-public class JniResult {
+class JniResult {
 
     /**
      * The return value for the JNI call.
      * This should be 0 for success.
      */
-    public int retval;
+    @JvmField
+    var retval: Int = 0
 
     /**
      * The errno value for any failed native system or library calls if {@link #retval} does not equal 0.
@@ -26,7 +27,8 @@ public class JniResult {
      *
      * https://manpages.debian.org/testing/manpages-dev/errno.3.en.html
      */
-    public int errno;
+    @JvmField
+    var errno: Int = 0
 
     /**
      * The error message for the failure if {@link #retval} does not equal 0.
@@ -34,12 +36,14 @@ public class JniResult {
      *
      * https://manpages.debian.org/testing/manpages-dev/strerror.3.en.html
      */
-    public String errmsg;
+    @JvmField
+    var errmsg: String? = null
 
     /**
      * Optional additional int data that needs to be returned by JNI call, like bytes read on success.
      */
-    public int intData;
+    @JvmField
+    var intData: Int = 0
 
     /**
      * Create an new instance of {@link JniResult}.
@@ -48,23 +52,26 @@ public class JniResult {
      * @param errno The {@link #errno} value.
      * @param errmsg The {@link #errmsg} value.
      */
-    public JniResult(int retval, int errno, String errmsg) {
-        this.retval = retval;
-        this.errno = errno;
-        this.errmsg = errmsg;
+    constructor(retval: Int, errno: Int, errmsg: String?) {
+        this.retval = retval
+        this.errno = errno
+        this.errmsg = errmsg
     }
 
     /**
      * Create an new instance of {@link JniResult}.
+     *
+     * Note: the exact JVM signature {@code (IILjava/lang/String;I)V} is looked
+     * up by name from native code ({@code local-socket.cpp#getJniResult}) and
+     * must be preserved.
      *
      * @param retval The {@link #retval} value.
      * @param errno The {@link #errno} value.
      * @param errmsg The {@link #errmsg} value.
      * @param intData The {@link #intData} value.
      */
-    public JniResult(int retval, int errno, String errmsg, int intData) {
-        this(retval, errno, errmsg);
-        this.intData = intData;
+    constructor(retval: Int, errno: Int, errmsg: String?, intData: Int) : this(retval, errno, errmsg) {
+        this.intData = intData
     }
 
     /**
@@ -73,34 +80,35 @@ public class JniResult {
      * @param message The error message.
      * @param throwable The {@link Throwable} value.
      */
-    public JniResult(String message, Throwable throwable) {
-        this(-1, 0, Logger.getMessageAndStackTraceString(message, throwable));
-    }
-
-    /**
-     * Get error {@link String} for {@link JniResult}.
-     *
-     * @param result The {@link JniResult} to get error from.
-     * @return Returns the error {@link String}.
-     */
-    @NonNull
-    public static String getErrorString(final JniResult result) {
-        if (result == null)
-            return "null";
-        return result.getErrorString();
-    }
+    constructor(message: String?, throwable: Throwable?) : this(-1, 0, Logger.getMessageAndStackTraceString(message, throwable))
 
     /**
      * Get error {@link String} for {@link JniResult}.
      */
     @NonNull
-    public String getErrorString() {
-        StringBuilder logString = new StringBuilder();
-        logString.append(Logger.getSingleLineLogStringEntry("Retval", retval, "-"));
+    fun getErrorString(): String {
+        val logString = StringBuilder()
+        logString.append(Logger.getSingleLineLogStringEntry("Retval", retval, "-"))
         if (errno != 0)
-            logString.append("\n").append(Logger.getSingleLineLogStringEntry("Errno", errno, "-"));
-        if (errmsg != null && !errmsg.isEmpty())
-            logString.append("\n").append(Logger.getMultiLineLogStringEntry("Errmsg", errmsg, "-"));
-        return logString.toString();
+            logString.append("\n").append(Logger.getSingleLineLogStringEntry("Errno", errno, "-"))
+        if (!errmsg.isNullOrEmpty())
+            logString.append("\n").append(Logger.getMultiLineLogStringEntry("Errmsg", errmsg, "-"))
+        return logString.toString()
+    }
+
+    companion object {
+        /**
+         * Get error {@link String} for {@link JniResult}.
+         *
+         * @param result The {@link JniResult} to get error from.
+         * @return Returns the error {@link String}.
+         */
+        @JvmStatic
+        @NonNull
+        fun getErrorString(result: JniResult?): String {
+            if (result == null)
+                return "null"
+            return result.getErrorString()
+        }
     }
 }

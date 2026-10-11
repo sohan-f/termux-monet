@@ -155,9 +155,10 @@ open class LocalSocketRunConfig : Serializable {
     }
 
     /**
-     * Get {@link #mFD}.
+     * Get {@link #mFD}. Returned as a primitive: the value is provably never {@code null}
+     * (primitive field or default applies) and all callers unbox it.
      */
-    fun getFD(): Int? {
+    fun getFD(): Int {
         return mFD
     }
 
@@ -173,8 +174,9 @@ open class LocalSocketRunConfig : Serializable {
 
     /**
      * Get {@link #mReceiveTimeout} if set, otherwise {@link #DEFAULT_RECEIVE_TIMEOUT}.
+     * Returned as a primitive: the value is provably never {@code null} and all callers unbox it.
      */
-    fun getReceiveTimeout(): Int? {
+    fun getReceiveTimeout(): Int {
         return mReceiveTimeout ?: DEFAULT_RECEIVE_TIMEOUT
     }
 
@@ -187,8 +189,9 @@ open class LocalSocketRunConfig : Serializable {
 
     /**
      * Get {@link #mSendTimeout} if set, otherwise {@link #DEFAULT_SEND_TIMEOUT}.
+     * Returned as a primitive: the value is provably never {@code null} and all callers unbox it.
      */
-    fun getSendTimeout(): Int? {
+    fun getSendTimeout(): Int {
         return mSendTimeout ?: DEFAULT_SEND_TIMEOUT
     }
 
@@ -201,8 +204,9 @@ open class LocalSocketRunConfig : Serializable {
 
     /**
      * Get {@link #mDeadline} if set, otherwise {@link #DEFAULT_DEADLINE}.
+     * Returned as a primitive: the value is provably never {@code null} and all callers unbox it.
      */
-    fun getDeadline(): Long? {
+    fun getDeadline(): Long {
         return mDeadline ?: DEFAULT_DEADLINE.toLong()
     }
 
@@ -215,8 +219,9 @@ open class LocalSocketRunConfig : Serializable {
 
     /**
      * Get {@link #mBacklog} if set, otherwise {@link #DEFAULT_BACKLOG}.
+     * Returned as a primitive: the value is provably never {@code null} and all callers unbox it.
      */
-    fun getBacklog(): Int? {
+    fun getBacklog(): Int {
         return mBacklog ?: DEFAULT_BACKLOG
     }
 

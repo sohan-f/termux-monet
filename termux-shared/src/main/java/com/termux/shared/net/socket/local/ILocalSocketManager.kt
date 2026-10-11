@@ -1,13 +1,13 @@
-package com.termux.shared.net.socket.local;
+package com.termux.shared.net.socket.local
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import com.termux.shared.errors.Error;
+import androidx.annotation.NonNull
+import androidx.annotation.Nullable
+import com.termux.shared.errors.Error
 
 /**
  * The interface for the {@link LocalSocketManager} for callbacks to manager client/server starter.
  */
-public interface ILocalSocketManager {
+interface ILocalSocketManager {
 
     /**
      * This should return the {@link Thread.UncaughtExceptionHandler} that should be used for the
@@ -17,8 +17,7 @@ public interface ILocalSocketManager {
      * @return Should return {@link Thread.UncaughtExceptionHandler} or {@code null}, if default
      * handler should be used which just logs the exception.
      */
-    @Nullable
-    Thread.UncaughtExceptionHandler getLocalSocketManagerClientThreadUEH(@NonNull LocalSocketManager localSocketManager);
+    fun getLocalSocketManagerClientThreadUEH(@NonNull localSocketManager: LocalSocketManager): Thread.UncaughtExceptionHandler?
 
     /**
      * This is called if any error is raised by {@link LocalSocketManager}, {@link LocalServerSocket}
@@ -34,7 +33,7 @@ public interface ILocalSocketManager {
      *                     if error is not for a {@link LocalClientSocket}.
      * @param error The {@link Error} auto generated that can be used for logging purposes.
      */
-    void onError(@NonNull LocalSocketManager localSocketManager, @Nullable LocalClientSocket clientSocket, @NonNull Error error);
+    fun onError(@NonNull localSocketManager: LocalSocketManager, @Nullable clientSocket: LocalClientSocket?, @NonNull error: Error)
 
     /**
      * This is called if a {@link LocalServerSocket} connects to the server which **does not** have
@@ -48,7 +47,7 @@ public interface ILocalSocketManager {
      * @param clientSocket The {@link LocalClientSocket} that connected.
      * @param error The {@link Error} auto generated that can be used for logging purposes.
      */
-    void onDisallowedClientConnected(@NonNull LocalSocketManager localSocketManager, @NonNull LocalClientSocket clientSocket, @NonNull Error error);
+    fun onDisallowedClientConnected(@NonNull localSocketManager: LocalSocketManager, @NonNull clientSocket: LocalClientSocket, @NonNull error: Error)
 
     /**
      * This is called if a {@link LocalServerSocket} connects to the server which has the
@@ -62,5 +61,5 @@ public interface ILocalSocketManager {
      * @param localSocketManager The {@link LocalSocketManager} for the server.
      * @param clientSocket The {@link LocalClientSocket} that connected.
      */
-    void onClientAccepted(@NonNull LocalSocketManager localSocketManager, @NonNull LocalClientSocket clientSocket);
+    fun onClientAccepted(@NonNull localSocketManager: LocalSocketManager, @NonNull clientSocket: LocalClientSocket)
 }

@@ -83,7 +83,7 @@ class AmSocketServer {
                 return
             }
             val amCommandString = data.toString()
-            Logger.logVerbose(LOG_TAG, "am command received from peer " + clientSocket.peerCred.minimalString + "\nam command: `" + amCommandString + "`")
+            Logger.logVerbose(LOG_TAG, "am command received from peer " + clientSocket.getPeerCred().getMinimalString() + "\nam command: `" + amCommandString + "`")
             // Parse am command string and convert it to a list of arguments
             val amCommandList = ArrayList<String>()
             val parseError = parseAmCommand(amCommandString, amCommandList)
@@ -92,12 +92,12 @@ class AmSocketServer {
                 return
             }
             val amCommandArray = amCommandList.toTypedArray()
-            Logger.logDebug(LOG_TAG, "am command received from peer " + clientSocket.peerCred.minimalString + "\n" + ExecutionCommand.getArgumentsLogString("am command", amCommandArray))
-            val amSocketServerRunConfig = localSocketManager.localSocketRunConfig as AmSocketServerRunConfig
+            Logger.logDebug(LOG_TAG, "am command received from peer " + clientSocket.getPeerCred().getMinimalString() + "\n" + ExecutionCommand.getArgumentsLogString("am command", amCommandArray))
+            val amSocketServerRunConfig = (localSocketManager.getLocalSocketRunConfig() as AmSocketServerRunConfig)
             // Run am command and send its result to the client
             val stdout = StringBuilder()
             val stderr = StringBuilder()
-            val runError = runAmCommand(localSocketManager.context, amCommandArray, stdout, stderr, amSocketServerRunConfig.shouldCheckDisplayOverAppsPermission())
+            val runError = runAmCommand(localSocketManager.getContext(), amCommandArray, stdout, stderr, amSocketServerRunConfig.shouldCheckDisplayOverAppsPermission())
             if (runError != null) {
                 sendResultToClient(localSocketManager, clientSocket, 1, stdout.toString(), if (stderr.toString().isNotEmpty()) "$stderr\n\n$runError" else runError.toString())
                 // Fixed missing return: without it the success result below was
@@ -145,7 +145,7 @@ class AmSocketServer {
         fun sanitizeExitCode(@NonNull clientSocket: LocalClientSocket, exitCode: Int): Int {
             var sanitizedExitCode = exitCode
             if (sanitizedExitCode < 0 || sanitizedExitCode > 255) {
-                Logger.logWarn(LOG_TAG, "Ignoring invalid peer " + clientSocket.peerCred.minimalString + " result value \"" + sanitizedExitCode + "\" and force setting it to \"" + 1 + "\"")
+                Logger.logWarn(LOG_TAG, "Ignoring invalid peer " + clientSocket.getPeerCred().getMinimalString() + " result value \"" + sanitizedExitCode + "\" and force setting it to \"" + 1 + "\"")
                 sanitizedExitCode = 1
             }
             return sanitizedExitCode

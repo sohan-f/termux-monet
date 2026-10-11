@@ -69,10 +69,10 @@ class TermuxSession private constructor(
             if (executionCommand.executable.isNullOrEmpty())
                 executionCommand.executable = null
             if (executionCommand.workingDirectory.isNullOrEmpty())
-                executionCommand.workingDirectory = shellEnvironmentClient.defaultWorkingDirectoryPath
+                executionCommand.workingDirectory = shellEnvironmentClient.getDefaultWorkingDirectoryPath()
             if (executionCommand.workingDirectory.isNullOrEmpty())
                 executionCommand.workingDirectory = "/"
-            var defaultBinPath = shellEnvironmentClient.defaultBinPath
+            var defaultBinPath = shellEnvironmentClient.getDefaultBinPath()
             if (defaultBinPath.isNullOrEmpty())
                 defaultBinPath = "/system/bin"
             var isLoginShell = false

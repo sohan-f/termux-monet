@@ -1,12 +1,12 @@
-package com.termux.shared.shell.command.environment;
+package com.termux.shared.shell.command.environment
 
-import android.content.Context;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import com.termux.shared.shell.command.ExecutionCommand;
-import java.util.HashMap;
+import android.content.Context
+import androidx.annotation.NonNull
+import androidx.annotation.Nullable
+import com.termux.shared.shell.command.ExecutionCommand
+import java.util.HashMap
 
-public interface IShellEnvironment {
+interface IShellEnvironment {
 
     /**
      * Get the default working directory path for the environment in case the path that was passed
@@ -15,7 +15,7 @@ public interface IShellEnvironment {
      * @return Should return the default working directory path.
      */
     @NonNull
-    String getDefaultWorkingDirectoryPath();
+    fun getDefaultWorkingDirectoryPath(): String
 
     /**
      * Get the default "/bin" path, like $PREFIX/bin.
@@ -23,7 +23,7 @@ public interface IShellEnvironment {
      * @return Should return the "/bin" path.
      */
     @NonNull
-    String getDefaultBinPath();
+    fun getDefaultBinPath(): String
 
     /**
      * Setup shell command arguments for the file to execute, like interpreter, etc.
@@ -33,7 +33,7 @@ public interface IShellEnvironment {
      * @return Should return the final process arguments.
      */
     @NonNull
-    String[] setupShellCommandArguments(@NonNull String fileToExecute, @Nullable String[] arguments);
+    fun setupShellCommandArguments(@NonNull fileToExecute: String, @Nullable arguments: Array<String?>?): Array<String>
 
     /**
      * Setup shell command environment to be used for commands.
@@ -43,5 +43,5 @@ public interface IShellEnvironment {
      * @return Should return the shell environment.
      */
     @NonNull
-    HashMap<String, String> setupShellCommandEnvironment(@NonNull Context currentPackageContext, @NonNull ExecutionCommand executionCommand);
+    fun setupShellCommandEnvironment(@NonNull currentPackageContext: Context, @NonNull executionCommand: ExecutionCommand): HashMap<String, String>
 }

@@ -74,7 +74,7 @@ class AppShell private constructor(
                 return null
             }
             if (executionCommand.workingDirectory.isNullOrEmpty())
-                executionCommand.workingDirectory = shellEnvironmentClient.defaultWorkingDirectoryPath
+                executionCommand.workingDirectory = shellEnvironmentClient.getDefaultWorkingDirectoryPath()
             if (executionCommand.workingDirectory.isNullOrEmpty())
                 executionCommand.workingDirectory = "/"
             // Transform executable path to shell/session name, e.g. "/bin/do-something.sh" => "do-something.sh".

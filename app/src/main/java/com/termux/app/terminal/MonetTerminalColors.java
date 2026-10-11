@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Build;
 
+import com.google.android.material.color.MaterialColors;
 import com.termux.shared.logger.Logger;
 import com.termux.terminal.TerminalColors;
 
@@ -24,17 +25,19 @@ import java.util.Set;
  * <p>
  * Role mapping (my design decision, not in M3 — the framework only exposes three
  * chromatic hues, so each accent palette serves two ANSI roles):
- * blue/yellow &lt;- accent1 (primary), green/cyan &lt;- accent2, red/magenta &lt;- accent3,
- * black/white/grays and foreground/background &lt;- neutral1, cursor &lt;- accent1 at the
- * M3 primary tone. Exact hues follow the user's wallpaper.
+ * blue/yellow &lt;- accent1 (primary), green/cyan &lt;- accent2, magenta &lt;- accent3,
+ * red &lt;- the live theme error roles (the only red-hue family Monet guarantees),
+ * mid grays &lt;- seed-tinted neutral2, black/white and foreground/background &lt;- neutral1,
+ * cursor &lt;- accent1 at the M3 primary tone. Exact hues follow the user's wallpaper.
  * </p>
  *
  * <p>
  * Robustness: every chromatic role is picked from a preference-ordered candidate list of
  * (palette, tone) slots. The first candidate with a WCAG contrast ratio of at least
  * {@link #MIN_CONTRAST} against the background <i>and</i> not already used by another role
- * wins. This keeps roles readable and distinct across wallpapers, including low-chroma
- * ones where palettes collapse toward gray (graceful degradation to a gray ramp).
+ * wins. Afterwards the non-red chromatics are harmonized toward the theme primary
+ * (M3 {@code Blend.harmonize} color science) subject to the same contrast and
+ * distinctness gates, so the palette stays cohesive without losing readability.
  * Minimum 3:1 comes from M3 (3:1 large text minimum; roles guarantee 3:1 pairs).
  * </p>
  */
@@ -49,6 +52,11 @@ public final class MonetTerminalColors {
     private static final int A1 = 0;
     private static final int A2 = 1;
     private static final int A3 = 2;
+    /** Pseudo-palette holding the live theme roles {error, errorContainer, onErrorContainer}. */
+    private static final int AERR = 3;
+    private static final int E_ERR = 0;
+    private static final int E_CONT = 1;
+    private static final int E_ONCONT = 2;
 
     // Tone positions in the resolved accent arrays (tones 100-900).
     private static final int T100 = 0;
@@ -75,7 +83,7 @@ public final class MonetTerminalColors {
     /** Candidate (palette, tone) slots per ANSI role for dark backgrounds: [role][dim/bright][candidates]. */
     private static final int[][][][] DARK_CANDIDATES = {
         null, // 0 black: fixed neutral
-        {{{A3, T500}, {A3, T400}, {A3, T600}, {A3, T300}}, {{A3, T200}, {A3, T300}, {A3, T100}}}, // 1 red
+        {{{AERR, E_CONT}, {A3, T500}, {A3, T400}, {A3, T600}, {A3, T300}}, {{AERR, E_ERR}, {A3, T200}, {A3, T300}, {A3, T100}}}, // 1 red
         {{{A2, T500}, {A2, T400}, {A2, T600}, {A2, T300}}, {{A2, T200}, {A2, T300}, {A2, T100}}}, // 2 green
         {{{A1, T300}, {A1, T400}, {A1, T200}, {A1, T500}}, {{A1, T100}, {A1, T200}, {A1, T300}}}, // 3 yellow
         {{{A1, T500}, {A1, T400}, {A1, T600}, {A1, T300}}, {{A1, T200}, {A1, T300}, {A1, T100}}}, // 4 blue
@@ -86,7 +94,7 @@ public final class MonetTerminalColors {
     /** Candidate (palette, tone) slots per ANSI role for light backgrounds. */
     private static final int[][][][] LIGHT_CANDIDATES = {
         null, // 0 black: fixed neutral
-        {{{A3, T600}, {A3, T500}, {A3, T700}}, {{A3, T800}, {A3, T700}, {A3, T900}}}, // 1 red
+        {{{AERR, E_ERR}, {A3, T600}, {A3, T500}, {A3, T700}}, {{AERR, E_ONCONT}, {A3, T800}, {A3, T700}, {A3, T900}}}, // 1 red
         {{{A2, T600}, {A2, T500}, {A2, T700}}, {{A2, T800}, {A2, T700}, {A2, T900}}}, // 2 green
         {{{A1, T500}, {A1, T600}, {A1, T400}}, {{A1, T700}, {A1, T800}, {A1, T600}}}, // 3 yellow
         {{{A1, T600}, {A1, T500}, {A1, T700}}, {{A1, T800}, {A1, T700}, {A1, T900}}}, // 4 blue
@@ -98,10 +106,18 @@ public final class MonetTerminalColors {
 
     /** Resolved Monet tones feeding the pure {@link #deriveScheme} selector. */
     static final class ResolvedTones {
-        /** accent1/2/3 palettes, each holding tones {100..900}. */
-        final int[][] accents = new int[3][9];
+        /** accent1/2/3 palettes, each holding tones {100..900}, plus error roles at index 3. */
+        final int[][] accents = new int[4][];
         /** neutral1 palette holding tones {50, 100, 300, 500, 800, 900}. */
         final int[] neutral = new int[6];
+        /** neutral2 seed-tinted grays holding tones {300, 500}. */
+        final int[] neutral2 = new int[2];
+
+        ResolvedTones() {
+            for (int i = 0; i < 3; i++) accents[i] = new int[9];
+            // Pseudo-palette with the live theme roles {error, errorContainer, onErrorContainer}.
+            accents[AERR] = new int[3];
+        }
     }
 
     /** Derived scheme: 16 ANSI colors plus default foreground, background and cursor. */
@@ -162,7 +178,23 @@ public final class MonetTerminalColors {
             tones.neutral[3] = context.getColor(android.R.color.system_neutral1_500);
             tones.neutral[4] = context.getColor(android.R.color.system_neutral1_800);
             tones.neutral[5] = context.getColor(android.R.color.system_neutral1_900);
+            tones.neutral2[0] = context.getColor(android.R.color.system_neutral2_300);
+            tones.neutral2[1] = context.getColor(android.R.color.system_neutral2_500);
+            // Live theme error roles: the only red-hue family Monet guarantees. Fall back to the
+            // tertiary slots if the theme ever lacks them. Note: colorError lives in AppCompat,
+            // the container roles in MDC (verified against material 1.14.0 / appcompat 1.7.0).
+            tones.accents[AERR][E_ERR] = MaterialColors.getColor(context,
+                androidx.appcompat.R.attr.colorError,
+                tones.accents[A3][night ? T200 : T600]);
+            tones.accents[AERR][E_CONT] = MaterialColors.getColor(context,
+                com.google.android.material.R.attr.colorErrorContainer, tones.accents[A3][T500]);
+            tones.accents[AERR][E_ONCONT] = MaterialColors.getColor(context,
+                com.google.android.material.R.attr.colorOnErrorContainer, tones.accents[A3][T800]);
             Scheme scheme = deriveScheme(tones, night);
+            int primary = MaterialColors.getColor(context, androidx.appcompat.R.attr.colorPrimary,
+                scheme.ansi[12]);
+            final int seedPrimary = primary;
+            applyHarmonize(scheme, color -> MaterialColors.harmonize(color, seedPrimary));
             TerminalColors.COLOR_SCHEME.updateWithMonetColors(scheme.ansi, scheme.foreground,
                 scheme.background, scheme.cursor);
             return true;
@@ -179,21 +211,22 @@ public final class MonetTerminalColors {
     static Scheme deriveScheme(ResolvedTones tones, boolean night) {
         Scheme scheme = new Scheme();
         int[] n = tones.neutral;
+        int[] n2 = tones.neutral2;
         if (night) {
             scheme.foreground = n[N50];
             scheme.background = n[N900];
             scheme.cursor = gatedCursor(tones.accents[A1][T200], scheme.background, true);
             scheme.ansi[0] = n[N800];
-            scheme.ansi[7] = n[N300];
-            scheme.ansi[8] = n[N500];
+            scheme.ansi[7] = n2[0];
+            scheme.ansi[8] = n2[1];
             scheme.ansi[15] = n[N50];
         } else {
             scheme.foreground = n[N900];
             scheme.background = n[N50];
             scheme.cursor = gatedCursor(tones.accents[A1][T600], scheme.background, false);
             scheme.ansi[0] = n[N900];
-            scheme.ansi[7] = n[N300];
-            scheme.ansi[8] = n[N500];
+            scheme.ansi[7] = n2[0];
+            scheme.ansi[8] = n2[1];
             scheme.ansi[15] = n[N100];
         }
         Set<Integer> taken = new HashSet<>();
@@ -215,6 +248,33 @@ public final class MonetTerminalColors {
             scheme.ansi[role + 8] = bright;
         }
         return scheme;
+    }
+
+    /**
+     * Harmonize the non-red chromatics of an already-derived scheme, keeping the result only
+     * when it still meets {@link #MIN_CONTRAST} and stays distinct. Red (1/9) is excluded to
+     * preserve the error-role anchor. The harmonize function is injected so this stays
+     * plain-JVM testable (MDC's {@code Blend} needs real android.graphics at runtime).
+     */
+    static void applyHarmonize(Scheme scheme, java.util.function.IntUnaryOperator harmonize) {
+        Set<Integer> taken = new HashSet<>();
+        taken.add(scheme.foreground);
+        taken.add(scheme.background);
+        taken.add(scheme.cursor);
+        taken.add(scheme.ansi[0]);
+        taken.add(scheme.ansi[1]);
+        taken.add(scheme.ansi[7]);
+        taken.add(scheme.ansi[8]);
+        taken.add(scheme.ansi[9]);
+        taken.add(scheme.ansi[15]);
+        for (int role : new int[] {2, 4, 3, 5, 6, 10, 11, 12, 13, 14}) {
+            int harmonized = harmonize.applyAsInt(scheme.ansi[role]);
+            if (!taken.contains(harmonized)
+                && contrastRatio(harmonized, scheme.background) >= MIN_CONTRAST) {
+                scheme.ansi[role] = harmonized;
+            }
+            taken.add(scheme.ansi[role]);
+        }
     }
 
     /**

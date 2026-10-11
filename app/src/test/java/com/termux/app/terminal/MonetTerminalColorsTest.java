@@ -21,26 +21,31 @@ public class MonetTerminalColorsTest {
         MonetTerminalColors.ResolvedTones tones = distinctTones();
         MonetTerminalColors.Scheme scheme = MonetTerminalColors.deriveScheme(tones, true);
         // Preferred dark slots pass the contrast gate and are distinct, so taken as-is.
-        Assert.assertEquals(tones.accents[2][4], scheme.ansi[1]); // red dim = a3_500
-        Assert.assertEquals(tones.accents[2][1], scheme.ansi[9]); // red bright = a3_200
+        Assert.assertEquals(tones.accents[3][1], scheme.ansi[1]); // red dim = errorContainer
+        Assert.assertEquals(tones.accents[3][0], scheme.ansi[9]); // red bright = error
         Assert.assertEquals(tones.accents[0][4], scheme.ansi[4]); // blue dim = a1_500
         Assert.assertEquals(tones.neutral[5], scheme.background);
         Assert.assertEquals(tones.neutral[0], scheme.foreground);
     }
 
     @Test
+    public void testRedAnchoredToErrorRolesInLightMode() {
+        MonetTerminalColors.ResolvedTones tones = distinctTones();
+        MonetTerminalColors.Scheme scheme = MonetTerminalColors.deriveScheme(tones, false);
+        Assert.assertEquals(tones.accents[3][0], scheme.ansi[1]); // red dim = error
+        Assert.assertEquals(tones.accents[3][2], scheme.ansi[9]); // red bright = onErrorContainer
+    }
+
+    @Test
     public void testLowContrastCandidatesAreSkipped() {
         MonetTerminalColors.ResolvedTones tones = distinctTones();
-        // Poison the preferred red slots with near-background colors.
-        tones.accents[2][4] = 0xFF101010;
-        tones.accents[2][3] = 0xFF101010;
-        tones.accents[2][5] = 0xFF101010;
-        tones.accents[2][2] = 0xFF101010;
+        // Poison the preferred dim error role with a near-background color.
+        tones.accents[3][1] = 0xFF101010;
         MonetTerminalColors.Scheme scheme = MonetTerminalColors.deriveScheme(tones, true);
-        // Falls back through the list; last resort is still the preferred slot, but it must
-        // never silently pick an unreadable non-preferred slot.
+        // Falls back to the next readable candidate instead.
+        Assert.assertEquals(tones.accents[2][4], scheme.ansi[1]); // a3_500
         Assert.assertTrue(MonetTerminalColors.contrastRatio(scheme.ansi[1], scheme.background)
-            >= MonetTerminalColors.MIN_CONTRAST || scheme.ansi[1] == tones.accents[2][4]);
+            >= MonetTerminalColors.MIN_CONTRAST);
     }
 
     @Test
@@ -55,6 +60,11 @@ public class MonetTerminalColorsTest {
         tones.neutral[3] = 0xFF808080;
         tones.neutral[4] = 0xFF333333;
         tones.neutral[5] = BLACK;
+        tones.neutral2[0] = 0xFF808080;
+        tones.neutral2[1] = 0xFF808080;
+        tones.accents[3][0] = 0xFF808080;
+        tones.accents[3][1] = 0xFF808080;
+        tones.accents[3][2] = 0xFF808080;
         MonetTerminalColors.Scheme scheme = MonetTerminalColors.deriveScheme(tones, true);
         // Fixed grays (0, 7, 8, 15) are intentionally ungated like xterm; assert the 12
         // contrast-selected chromatic roles.
@@ -86,6 +96,31 @@ public class MonetTerminalColorsTest {
         Assert.assertEquals(tones.neutral[5], scheme.ansi[0]);
     }
 
+    @Test
+    public void testApplyHarmonizeKeepsReadableDistinctResults() {
+        MonetTerminalColors.ResolvedTones tones = distinctTones();
+        MonetTerminalColors.Scheme scheme = MonetTerminalColors.deriveScheme(tones, true);
+        int[] before = scheme.ansi.clone();
+        // Fake shift: brighten red channel; red roles (1/9) must stay untouched.
+        MonetTerminalColors.applyHarmonize(scheme, c -> 0xFF000000 | (c & 0x00FFFF) | 0x100000);
+        Assert.assertEquals(before[1], scheme.ansi[1]);
+        Assert.assertEquals(before[9], scheme.ansi[9]);
+        for (int role : new int[] {2, 4, 3, 5, 6, 10, 11, 12, 13, 14}) {
+            Assert.assertTrue(MonetTerminalColors.contrastRatio(scheme.ansi[role], scheme.background)
+                >= MonetTerminalColors.MIN_CONTRAST);
+        }
+    }
+
+    @Test
+    public void testApplyHarmonizeRejectsUnreadableAndCollidingResults() {
+        MonetTerminalColors.ResolvedTones tones = distinctTones();
+        MonetTerminalColors.Scheme scheme = MonetTerminalColors.deriveScheme(tones, true);
+        int[] before = scheme.ansi.clone();
+        // Fake harmonize collapses everything onto the background: all rejected.
+        MonetTerminalColors.applyHarmonize(scheme, c -> scheme.background);
+        Assert.assertArrayEquals(before, scheme.ansi);
+    }
+
     /**
      * Every resolved tone bright (>= 0x88 per channel, contrast vs black >= ~6) and unique,
      * so preferred candidates pass the gate and taken checks.
@@ -105,6 +140,11 @@ public class MonetTerminalColorsTest {
         tones.neutral[3] = 0xFF888888;
         tones.neutral[4] = 0xFF333333;
         tones.neutral[5] = BLACK;
+        tones.neutral2[0] = 0xFFBBBBBB;
+        tones.neutral2[1] = 0xFF999999;
+        tones.accents[3][0] = 0xFFFF8888;
+        tones.accents[3][1] = 0xFFCC4444;
+        tones.accents[3][2] = 0xFF990000;
         return tones;
     }
 }

@@ -32,7 +32,7 @@ public class LocalSocketErrno extends Errno {
 
     public static final Errno ERRNO_GET_CLIENT_SOCKET_PEER_UID_FAILED = new Errno(TYPE, 158, "Getting peer uid for client socket for \"%1$s\" server failed.\n%2$s");
 
-    public static final Errno ERRNO_CLIENT_SOCKET_PEER_UID_INVALID = new Errno(TYPE, 158, "Invalid peer uid \"%1$s\" returned for new client for \"%2$s\" server.");
+    public static final Errno ERRNO_CLIENT_SOCKET_PEER_UID_INVALID = new Errno(TYPE, 159, "Invalid peer uid \"%1$s\" returned for new client for \"%2$s\" server.");
 
     public static final Errno ERRNO_CLIENT_SOCKET_PEER_UID_DISALLOWED = new Errno(TYPE, 160, "Disallowed peer %1$s tried to connect with \"%2$s\" server.");
 

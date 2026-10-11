@@ -686,7 +686,7 @@ class ExecutionCommand {
          * @return Returns the log friendly {@link String}.
          */
         @JvmStatic
-        fun getArgumentsLogString(label: String?, argumentsArray: Array<String?>?): String {
+        fun getArgumentsLogString(label: String?, argumentsArray: Array<out String?>?): String {
             val argumentsString = StringBuilder("$label:")
             if (argumentsArray != null && argumentsArray.isNotEmpty()) {
                 argumentsString.append("\n```\n")
@@ -720,7 +720,7 @@ class ExecutionCommand {
          *  @return Returns the markdown {@link String}.
          */
         @JvmStatic
-        fun getArgumentsMarkdownString(label: String?, argumentsArray: Array<String?>?): String {
+        fun getArgumentsMarkdownString(label: String?, argumentsArray: Array<out String?>?): String {
             val argumentsString = StringBuilder("**$label:**")
             if (argumentsArray != null && argumentsArray.isNotEmpty()) {
                 argumentsString.append("\n")

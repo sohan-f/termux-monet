@@ -184,6 +184,7 @@ dependencies {
     implementation project(":terminal-view")
     implementation project(":termux-shared")
     implementation project(":native-entrypoint")
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.robolectric:robolectric:4.13"
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.2"
@@ -206,6 +207,9 @@ def validateVersionName(String versionName) {
     }
 }
 
+// Excludes the thin kotlin-stdlib-jdk8 redirect artifact (its classes now live in
+// kotlin-stdlib) to avoid duplicate-class errors. Does NOT affect the direct
+// kotlin-stdlib dependency above, which is a different module.
 // https://stackoverflow.com/questions/75274720/a-failure-occurred-while-executing-appcheckdebugduplicateclasses/
 configurations.implementation {
    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'

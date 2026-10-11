@@ -88,6 +88,7 @@ tasks.withType(JavaCompile) {
 
 dependencies {
     implementation "androidx.annotation:annotation:1.8.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 }
 
 task sourceJar(type: Jar) {

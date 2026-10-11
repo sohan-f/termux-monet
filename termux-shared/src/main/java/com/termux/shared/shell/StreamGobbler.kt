@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.termux.shared.shell;
+package com.termux.shared.shell
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.List;
-import java.util.Locale;
-import androidx.annotation.AnyThread;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.WorkerThread;
-import com.termux.shared.logger.Logger;
+import androidx.annotation.AnyThread
+import androidx.annotation.NonNull
+import androidx.annotation.Nullable
+import androidx.annotation.WorkerThread
+import com.termux.shared.logger.Logger
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.util.Locale
 
 /**
  * Thread utility class continuously reading from an InputStream
@@ -33,23 +32,26 @@ import com.termux.shared.logger.Logger;
  * https://github.com/Chainfire/libsuperuser/blob/1.1.0.201907261845/libsuperuser/src/eu/chainfire/libsuperuser/Shell.java#L141
  * https://github.com/Chainfire/libsuperuser/blob/1.1.0.201907261845/libsuperuser/src/eu/chainfire/libsuperuser/StreamGobbler.java
  */
-@SuppressWarnings({ "WeakerAccess" })
-public class StreamGobbler extends Thread {
+@Suppress("WeakerAccess")
+open class StreamGobbler : Thread {
 
-    private static int threadCounter = 0;
+    companion object {
+        private var threadCounter = 0
 
-    private static int incThreadCounter() {
-        synchronized (StreamGobbler.class) {
-            int ret = threadCounter;
-            threadCounter++;
-            return ret;
+        @Synchronized
+        private fun incThreadCounter(): Int {
+            val ret = threadCounter
+            threadCounter++
+            return ret
         }
+
+        private const val LOG_TAG = "StreamGobbler"
     }
 
     /**
      * Line callback interface
      */
-    public interface OnLineListener {
+    fun interface OnLineListener {
 
         /**
          * <p>Line callback</p>
@@ -60,49 +62,49 @@ public class StreamGobbler extends Thread {
          *
          * @param line String that was gobbled
          */
-        void onLine(String line);
+        fun onLine(line: String)
     }
 
     /**
      * Stream closed callback interface
      */
-    public interface OnStreamClosedListener {
+    fun interface OnStreamClosedListener {
 
         /**
          * <p>Stream closed callback</p>
          */
-        void onStreamClosed();
+        fun onStreamClosed()
     }
 
     @NonNull
-    private final String shell;
+    private val shell: String
 
     @NonNull
-    private final InputStream inputStream;
+    private val inputStream: InputStream
 
     @NonNull
-    private final BufferedReader reader;
+    private val reader: BufferedReader
 
     @Nullable
-    private final List<String> listWriter;
+    private val listWriter: MutableList<String>?
 
     @Nullable
-    private final StringBuilder stringWriter;
+    private val stringWriter: StringBuilder?
 
     @Nullable
-    private final OnLineListener lineListener;
+    private val lineListener: OnLineListener?
 
     @Nullable
-    private final OnStreamClosedListener streamClosedListener;
+    private val streamClosedListener: OnStreamClosedListener?
 
     @Nullable
-    private final Integer mLogLevel;
+    private val mLogLevel: Int?
 
-    private volatile boolean active = true;
+    @Volatile
+    private var active: Boolean = true
 
-    private volatile boolean calledOnClose = false;
-
-    private static final String LOG_TAG = "StreamGobbler";
+    @Volatile
+    private var calledOnClose: Boolean = false
 
     /**
      * <p>StreamGobbler constructor</p>
@@ -118,16 +120,15 @@ public class StreamGobbler extends Thread {
      *                 {@code null}, then {@link Logger#LOG_LEVEL_VERBOSE} will be used.
      */
     @AnyThread
-    public StreamGobbler(@NonNull String shell, @NonNull InputStream inputStream, @Nullable List<String> outputList, @Nullable Integer logLevel) {
-        super("Gobbler#" + incThreadCounter());
-        this.shell = shell;
-        this.inputStream = inputStream;
-        reader = new BufferedReader(new InputStreamReader(inputStream));
-        streamClosedListener = null;
-        listWriter = outputList;
-        stringWriter = null;
-        lineListener = null;
-        mLogLevel = logLevel;
+    constructor(@NonNull shell: String, @NonNull inputStream: InputStream, @Nullable outputList: MutableList<String>?, @Nullable logLevel: Int?) : super("Gobbler#" + incThreadCounter()) {
+        this.shell = shell
+        this.inputStream = inputStream
+        reader = BufferedReader(InputStreamReader(inputStream))
+        streamClosedListener = null
+        listWriter = outputList
+        stringWriter = null
+        lineListener = null
+        mLogLevel = logLevel
     }
 
     /**
@@ -146,16 +147,15 @@ public class StreamGobbler extends Thread {
      *                 {@code null}, then {@link Logger#LOG_LEVEL_VERBOSE} will be used.
      */
     @AnyThread
-    public StreamGobbler(@NonNull String shell, @NonNull InputStream inputStream, @Nullable StringBuilder outputString, @Nullable Integer logLevel) {
-        super("Gobbler#" + incThreadCounter());
-        this.shell = shell;
-        this.inputStream = inputStream;
-        reader = new BufferedReader(new InputStreamReader(inputStream));
-        streamClosedListener = null;
-        listWriter = null;
-        stringWriter = outputString;
-        lineListener = null;
-        mLogLevel = logLevel;
+    constructor(@NonNull shell: String, @NonNull inputStream: InputStream, @Nullable outputString: StringBuilder?, @Nullable logLevel: Int?) : super("Gobbler#" + incThreadCounter()) {
+        this.shell = shell
+        this.inputStream = inputStream
+        reader = BufferedReader(InputStreamReader(inputStream))
+        streamClosedListener = null
+        listWriter = null
+        stringWriter = outputString
+        lineListener = null
+        mLogLevel = logLevel
     }
 
     /**
@@ -173,65 +173,64 @@ public class StreamGobbler extends Thread {
      *                 {@code null}, then {@link Logger#LOG_LEVEL_VERBOSE} will be used.
      */
     @AnyThread
-    public StreamGobbler(@NonNull String shell, @NonNull InputStream inputStream, @Nullable OnLineListener onLineListener, @Nullable OnStreamClosedListener onStreamClosedListener, @Nullable Integer logLevel) {
-        super("Gobbler#" + incThreadCounter());
-        this.shell = shell;
-        this.inputStream = inputStream;
-        reader = new BufferedReader(new InputStreamReader(inputStream));
-        streamClosedListener = onStreamClosedListener;
-        listWriter = null;
-        stringWriter = null;
-        lineListener = onLineListener;
-        mLogLevel = logLevel;
+    constructor(@NonNull shell: String, @NonNull inputStream: InputStream, @Nullable onLineListener: OnLineListener?, @Nullable onStreamClosedListener: OnStreamClosedListener?, @Nullable logLevel: Int?) : super("Gobbler#" + incThreadCounter()) {
+        this.shell = shell
+        this.inputStream = inputStream
+        reader = BufferedReader(InputStreamReader(inputStream))
+        streamClosedListener = onStreamClosedListener
+        listWriter = null
+        stringWriter = null
+        lineListener = onLineListener
+        mLogLevel = logLevel
     }
 
-    @Override
-    public void run() {
-        String defaultLogTag = Logger.getDefaultLogTag();
-        boolean loggingEnabled = Logger.shouldEnableLoggingForCustomLogLevel(mLogLevel);
+    override fun run() {
+        val defaultLogTag = Logger.getDefaultLogTag()
+        val loggingEnabled = Logger.shouldEnableLoggingForCustomLogLevel(mLogLevel)
         if (loggingEnabled)
-            Logger.logVerbose(LOG_TAG, "Using custom log level: " + mLogLevel + ", current log level: " + Logger.getLogLevel());
+            Logger.logVerbose(LOG_TAG, "Using custom log level: " + mLogLevel + ", current log level: " + Logger.getLogLevel())
         // keep reading the InputStream until it ends (or an error occurs)
         // optionally pausing when a command is executed that consumes the InputStream itself
         try {
-            String line;
-            while ((line = reader.readLine()) != null) {
+            var line = reader.readLine()
+            while (line != null) {
                 if (loggingEnabled)
                     // This will get truncated by LOGGER_ENTRY_MAX_LEN, likely 4KB
-                    Logger.logVerboseForce(defaultLogTag + "Command", String.format(Locale.ENGLISH, "[%s] %s", shell, line));
+                    Logger.logVerboseForce(defaultLogTag + "Command", String.format(Locale.ENGLISH, "[%s] %s", shell, line))
                 if (stringWriter != null)
-                    stringWriter.append(line).append("\n");
+                    stringWriter.append(line).append("\n")
                 if (listWriter != null)
-                    listWriter.add(line);
+                    listWriter.add(line)
                 if (lineListener != null)
-                    lineListener.onLine(line);
+                    lineListener.onLine(line)
                 while (!active) {
-                    synchronized (this) {
+                    synchronized(this) {
                         try {
-                            this.wait(128);
-                        } catch (InterruptedException e) {
+                            (this as Object).wait(128)
+                        } catch (e: InterruptedException) {
                             // no action
                         }
                     }
                 }
+                line = reader.readLine()
             }
-        } catch (IOException e) {
+        } catch (e: IOException) {
             // reader probably closed, expected exit condition
             if (streamClosedListener != null) {
-                calledOnClose = true;
-                streamClosedListener.onStreamClosed();
+                calledOnClose = true
+                streamClosedListener.onStreamClosed()
             }
         }
         // make sure our stream is closed and resources will be freed
         try {
-            reader.close();
-        } catch (IOException e) {
+            reader.close()
+        } catch (e: IOException) {
             // read already closed
         }
         if (!calledOnClose) {
             if (streamClosedListener != null) {
-                calledOnClose = true;
-                streamClosedListener.onStreamClosed();
+                calledOnClose = true
+                streamClosedListener.onStreamClosed()
             }
         }
     }
@@ -240,11 +239,11 @@ public class StreamGobbler extends Thread {
      * <p>Resume consuming the input from the stream</p>
      */
     @AnyThread
-    public void resumeGobbling() {
+    fun resumeGobbling() {
         if (!active) {
-            synchronized (this) {
-                active = true;
-                this.notifyAll();
+            synchronized(this) {
+                active = true
+                (this as Object).notifyAll()
             }
         }
     }
@@ -255,10 +254,10 @@ public class StreamGobbler extends Thread {
      * <p>This should <i>only</i> be called from the OnLineListener callback!</p>
      */
     @AnyThread
-    public void suspendGobbling() {
-        synchronized (this) {
-            active = false;
-            this.notifyAll();
+    fun suspendGobbling() {
+        synchronized(this) {
+            active = false
+            (this as Object).notifyAll()
         }
     }
 
@@ -268,12 +267,12 @@ public class StreamGobbler extends Thread {
      * <p>Obviously this cannot be called from the same thread as {@link #suspendGobbling()}</p>
      */
     @WorkerThread
-    public void waitForSuspend() {
-        synchronized (this) {
+    fun waitForSuspend() {
+        synchronized(this) {
             while (active) {
                 try {
-                    this.wait(32);
-                } catch (InterruptedException e) {
+                    (this as Object).wait(32)
+                } catch (e: InterruptedException) {
                     // no action
                 }
             }
@@ -286,9 +285,9 @@ public class StreamGobbler extends Thread {
      * @return is gobbling suspended?
      */
     @AnyThread
-    public boolean isSuspended() {
-        synchronized (this) {
-            return !active;
+    fun isSuspended(): Boolean {
+        synchronized(this) {
+            return !active
         }
     }
 
@@ -299,8 +298,8 @@ public class StreamGobbler extends Thread {
      */
     @NonNull
     @AnyThread
-    public InputStream getInputStream() {
-        return inputStream;
+    fun getInputStream(): InputStream {
+        return inputStream
     }
 
     /**
@@ -310,17 +309,17 @@ public class StreamGobbler extends Thread {
      */
     @Nullable
     @AnyThread
-    public OnLineListener getOnLineListener() {
-        return lineListener;
+    fun getOnLineListener(): OnLineListener? {
+        return lineListener
     }
 
-    void conditionalJoin() throws InterruptedException {
+    internal fun conditionalJoin() {
         // deadlock from callback, we're inside exit procedure
         if (calledOnClose)
-            return;
+            return
         // can't join self
         if (Thread.currentThread() == this)
-            return;
-        join();
+            return
+        join()
     }
 }

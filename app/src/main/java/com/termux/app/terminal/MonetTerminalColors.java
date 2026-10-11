@@ -48,6 +48,11 @@ public final class MonetTerminalColors {
     /** Minimum WCAG contrast ratio of a chromatic ANSI color against the background. */
     static final double MIN_CONTRAST = 3.0;
 
+    // Process-lifetime cache: system colors only change on wallpaper/theme change.
+    private static int sCachedWallpaperId = Integer.MIN_VALUE;
+    private static boolean sCachedNight;
+    private static Scheme sCachedScheme;
+
     // Palette ids into the palettes array passed to the selector.
     private static final int A1 = 0;
     private static final int A2 = 1;
@@ -141,6 +146,18 @@ public final class MonetTerminalColors {
         try {
             boolean night = (context.getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+            int wallpaperId = currentWallpaperId(context);
+            boolean useCache = wallpaperId > 0;
+            if (useCache) {
+                synchronized (MonetTerminalColors.class) {
+                    if (sCachedScheme != null && sCachedNight == night && sCachedWallpaperId == wallpaperId) {
+                        Scheme cached = sCachedScheme;
+                        TerminalColors.COLOR_SCHEME.updateWithMonetColors(cached.ansi, cached.foreground,
+                            cached.background, cached.cursor);
+                        return true;
+                    }
+                }
+            }
             ResolvedTones tones = new ResolvedTones();
             tones.accents[A1] = new int[] {
                 context.getColor(android.R.color.system_accent1_100),
@@ -195,6 +212,13 @@ public final class MonetTerminalColors {
                 scheme.ansi[12]);
             final int seedPrimary = primary;
             applyHarmonize(scheme, color -> MaterialColors.harmonize(color, seedPrimary));
+            if (useCache) {
+                synchronized (MonetTerminalColors.class) {
+                    sCachedNight = night;
+                    sCachedWallpaperId = wallpaperId;
+                    sCachedScheme = scheme;
+                }
+            }
             TerminalColors.COLOR_SCHEME.updateWithMonetColors(scheme.ansi, scheme.foreground,
                 scheme.background, scheme.cursor);
             return true;
@@ -202,6 +226,19 @@ public final class MonetTerminalColors {
             Logger.logStackTraceWithMessage(LOG_TAG, "Failed to resolve Monet system colors", e);
             return false;
         }
+    }
+
+    /** Wallpaper id for cache invalidation, or -1 when unreadable (disables caching). */
+    private static int currentWallpaperId(Context context) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                return android.app.WallpaperManager.getInstance(context)
+                    .getWallpaperId(android.app.WallpaperManager.FLAG_SYSTEM);
+            }
+        } catch (Exception e) {
+            Logger.logStackTraceWithMessage(LOG_TAG, "Failed to read wallpaper id", e);
+        }
+        return -1;
     }
 
     /**

@@ -487,30 +487,43 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
     }
 
     public void checkForFontAndColors() {
-        try {
-            File colorsFile = TermuxConstants.TERMUX_COLOR_PROPERTIES_FILE;
-            File fontFile = TermuxConstants.TERMUX_FONT_FILE;
-            File italicFontFile = TermuxConstants.TERMUX_ITALIC_FONT_FILE;
-            final Properties props = new Properties();
-            if (colorsFile.isFile()) {
-                try (InputStream in = new FileInputStream(colorsFile)) {
-                    props.load(in);
+        // Font parsing and color resolution cost ~30ms: run off the critical path. The
+        // emulator does not exist yet at first start (service connects later) and the reload
+        // path re-resets its colors below, so both orders are correct.
+        new Thread(() -> {
+            Typeface newTypeface = Typeface.MONOSPACE;
+            Typeface newItalicTypeface = newTypeface;
+            try {
+                File colorsFile = TermuxConstants.TERMUX_COLOR_PROPERTIES_FILE;
+                File fontFile = TermuxConstants.TERMUX_FONT_FILE;
+                File italicFontFile = TermuxConstants.TERMUX_ITALIC_FONT_FILE;
+                final Properties props = new Properties();
+                if (colorsFile.isFile()) {
+                    try (InputStream in = new FileInputStream(colorsFile)) {
+                        props.load(in);
+                    }
+                    TerminalColors.COLOR_SCHEME.updateWith(props);
+                } else if (!MonetTerminalColors.applyMonetColors(mActivity)) {
+                    // No colors file and Monet unavailable (< API 31 or resolution failed):
+                    // reset to the stock xterm scheme.
+                    TerminalColors.COLOR_SCHEME.updateWith(props);
                 }
-                TerminalColors.COLOR_SCHEME.updateWith(props);
-            } else if (!MonetTerminalColors.applyMonetColors(mActivity)) {
-                // No colors file and Monet unavailable (< API 31 or resolution failed):
-                // reset to the stock xterm scheme.
-                TerminalColors.COLOR_SCHEME.updateWith(props);
+                newTypeface = (fontFile.exists() && fontFile.length() > 0) ? Typeface.createFromFile(fontFile) : Typeface.MONOSPACE;
+                newItalicTypeface = (italicFontFile.exists() && italicFontFile.length() > 0) ? Typeface.createFromFile(italicFontFile) : newTypeface;
+            } catch (Exception e) {
+                Logger.logStackTraceWithMessage(LOG_TAG, "Error in checkForFontAndColors()", e);
             }
-            TerminalSession session = mActivity.getCurrentSession();
-            if (session != null && session.getEmulator() != null) {
-                session.getEmulator().mColors.reset();
-            }
-            final Typeface newTypeface = (fontFile.exists() && fontFile.length() > 0) ? Typeface.createFromFile(fontFile) : Typeface.MONOSPACE;
-            final Typeface newItalicTypeface = (italicFontFile.exists() && italicFontFile.length() > 0) ? Typeface.createFromFile(italicFontFile) : newTypeface;
-            mActivity.getTerminalView().setTypeface(newTypeface, newItalicTypeface);
-        } catch (Exception e) {
-            Logger.logStackTraceWithMessage(LOG_TAG, "Error in checkForFontAndColors()", e);
-        }
+            final Typeface resolvedTypeface = newTypeface;
+            final Typeface resolvedItalicTypeface = newItalicTypeface;
+            mActivity.runOnUiThread(() -> {
+                if (mActivity.isFinishing() || mActivity.getTerminalView() == null)
+                    return;
+                mActivity.getTerminalView().setTypeface(resolvedTypeface, resolvedItalicTypeface);
+                TerminalSession session = mActivity.getCurrentSession();
+                if (session != null && session.getEmulator() != null) {
+                    session.getEmulator().mColors.reset();
+                }
+            });
+        }, "termux-font-colors").start();
     }
 }

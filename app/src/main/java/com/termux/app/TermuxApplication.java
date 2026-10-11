@@ -55,10 +55,15 @@ public class TermuxApplication extends Application {
             Logger.logErrorExtended(LOG_TAG, "Termux files directory is not accessible\n" + error);
         }
         // Init TermuxShellEnvironment constants and caches after everything has been setup including termux-am-socket server
-        TermuxShellEnvironment.init(this);
-        if (isTermuxFilesDirectoryAccessible) {
-            TermuxShellEnvironment.writeEnvironmentToFile(this);
-        }
+        // Shell environment setup (PackageManager queries) and the env file write are off the
+        // cold-start critical path: sessions only read them after service connect, and the
+        // getters recompute on demand if ever hit early, so run them in the background.
+        new Thread(() -> {
+            TermuxShellEnvironment.init(context);
+            if (isTermuxFilesDirectoryAccessible) {
+                TermuxShellEnvironment.writeEnvironmentToFile(context);
+            }
+        }, "termux-env-init").start();
     }
 
     public static void setLogConfig(Context context) {

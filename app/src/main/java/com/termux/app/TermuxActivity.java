@@ -337,11 +337,10 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             addTermuxActivityRootViewGlobalLayoutListener();
     
         configureViewVisibility(R.id.terminal_monetbackground, mPreferences.isMonetBackgroundEnabled());
-        configureViewVisibility(R.id.terminal_background_blur,
-            mPreferences.isBackgroundImageBlurEnabled() && mPreferences.isBackgroundImageEnabled());
-        configureBackgroundBlur(R.id.sessions_backgroundblur, R.id.sessions_background, mPreferences.isSessionsBlurEnabled(), 0.5f);
+        configureTerminalBackgroundBlur();
+        configureBackgroundBlur(R.id.sessions_blur_stub, R.id.sessions_backgroundblur, R.id.sessions_background, mPreferences.isSessionsBlurEnabled(), 0.5f);
         configureExtraKeysBackground();
-    
+
         registerTermuxActivityBroadcastReceiver();
     }
 
@@ -357,9 +356,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             mTermuxTerminalViewClient.onResume();
 
         configureViewVisibility(R.id.terminal_monetbackground, mPreferences.isMonetBackgroundEnabled());
-        configureViewVisibility(R.id.terminal_background_blur,
-            mPreferences.isBackgroundImageBlurEnabled() && mPreferences.isBackgroundImageEnabled());
-        configureBackgroundBlur(R.id.sessions_backgroundblur, R.id.sessions_background, mPreferences.isSessionsBlurEnabled(), 0.5f);
+        configureTerminalBackgroundBlur();
+        configureBackgroundBlur(R.id.sessions_blur_stub, R.id.sessions_backgroundblur, R.id.sessions_background, mPreferences.isSessionsBlurEnabled(), 0.5f);
         configureExtraKeysBackground();
         
         // Check if a crash happened on last run of the app or if a plugin crashed and show a
@@ -372,30 +370,55 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         View view = findViewById(viewId);
         view.setVisibility(isVisible ? View.VISIBLE : View.GONE);
     }
+
+    /**
+     * Find an already-inflated blur view, or inflate its {@link android.view.ViewStub} on
+     * first enable so disabled blur views cost nothing at inflation.
+     */
+    private com.github.mmin18.widget.RealtimeBlurView getOrInflateBlurView(int stubId, int blurViewId) {
+        View existing = findViewById(blurViewId);
+        if (existing != null)
+            return (com.github.mmin18.widget.RealtimeBlurView) existing;
+        android.view.ViewStub stub = findViewById(stubId);
+        if (stub != null)
+            return (com.github.mmin18.widget.RealtimeBlurView) stub.inflate();
+        return null;
+    }
+
+    private void setBlurViewVisibility(int stubId, int blurViewId, boolean isVisible) {
+        if (isVisible) {
+            com.github.mmin18.widget.RealtimeBlurView blurView = getOrInflateBlurView(stubId, blurViewId);
+            if (blurView != null)
+                blurView.setVisibility(View.VISIBLE);
+        } else {
+            View blurView = findViewById(blurViewId);
+            if (blurView != null)
+                blurView.setVisibility(View.GONE);
+        }
+    }
+
+    private void configureTerminalBackgroundBlur() {
+        setBlurViewVisibility(R.id.terminal_background_blur_stub, R.id.terminal_background_blur,
+            mPreferences.isBackgroundImageBlurEnabled() && mPreferences.isBackgroundImageEnabled());
+    }
     
-    private void configureBackgroundBlur(int blurViewId, int backgroundViewId, boolean isBlurEnabled, float alphaIfBlurred) {
-        View blurView = findViewById(blurViewId);
+    private void configureBackgroundBlur(int blurStubId, int blurViewId, int backgroundViewId, boolean isBlurEnabled, float alphaIfBlurred) {
+        setBlurViewVisibility(blurStubId, blurViewId, isBlurEnabled);
         View backgroundView = findViewById(backgroundViewId);
-        blurView.setVisibility(isBlurEnabled ? View.VISIBLE : View.GONE);
         backgroundView.setAlpha(isBlurEnabled ? alphaIfBlurred : 1.0f);
     }
     
     private void configureExtraKeysBackground() {
         View extraKeysBackground = findViewById(R.id.extrakeys_background);
-        View extraKeysBackgroundBlur = findViewById(R.id.extrakeys_backgroundblur);
         boolean isToolbarToggled = mPreferences.toogleShowTerminalToolbar();
 
         if (!isToolbarToggled) {
-            extraKeysBackgroundBlur.setVisibility(View.GONE);
+            setBlurViewVisibility(R.id.extrakeys_blur_stub, R.id.extrakeys_backgroundblur, false);
             extraKeysBackground.setVisibility(View.GONE);
         } else {
-            if (mPreferences.isExtraKeysBlurEnabled()) {
-                extraKeysBackgroundBlur.setVisibility(View.VISIBLE);
-                extraKeysBackground.setAlpha(0.80f);
-            } else {
-                extraKeysBackgroundBlur.setVisibility(View.GONE);
-                extraKeysBackground.setAlpha(1.0f);
-            }
+            setBlurViewVisibility(R.id.extrakeys_blur_stub, R.id.extrakeys_backgroundblur,
+                mPreferences.isExtraKeysBlurEnabled());
+            extraKeysBackground.setAlpha(mPreferences.isExtraKeysBlurEnabled() ? 0.80f : 1.0f);
             extraKeysBackground.setVisibility(View.VISIBLE);
         }
     }
@@ -560,14 +583,45 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         mTermuxTerminalExtraKeys = new TermuxTerminalExtraKeys(this, mTerminalView, mTermuxTerminalViewClient, mTermuxTerminalSessionActivityClient, 0);
         mTermuxTerminalExtraKeys2 = new TermuxTerminalExtraKeys(this, mTerminalView, mTermuxTerminalViewClient, mTermuxTerminalSessionActivityClient, 1);
         final ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
-        if (mPreferences.shouldShowTerminalToolbar())
-            terminalToolbarViewPager.setVisibility(View.VISIBLE);
-        ViewGroup.LayoutParams layoutParams = terminalToolbarViewPager.getLayoutParams();
-        mTerminalToolbarDefaultHeight = layoutParams.height;
-        setTerminalToolbarHeight();
         String savedTextInput = null;
         if (savedInstanceState != null)
             savedTextInput = savedInstanceState.getString(ARG_TERMINAL_TOOLBAR_TEXT_INPUT);
+        if (mPreferences.shouldShowTerminalToolbar()) {
+            terminalToolbarViewPager.setVisibility(View.VISIBLE);
+            // Adapter inflates the extra-keys pages; skip that work when hidden and
+            // create it lazily on first toggle (see toggleTerminalToolbar()).
+            // When shown, still defer past the first drawn frame: ViewPager populates
+            // during traversal and inflating/measuring dozens of MaterialButtons costs
+            // several hundred ms on the critical path. The posted runnable runs after the
+            // in-flight draw, so the first frame stays fast. Session output arrives later.
+            final String deferredTextInput = savedTextInput;
+            terminalToolbarViewPager.getViewTreeObserver().addOnPreDrawListener(
+                new android.view.ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    // NB: resolve the observer fresh here. The one captured in onCreate belongs
+                    // to the unattached view and is dead after attach (listeners merge into the
+                    // live one), so removing from the captured instance never sticks.
+                    android.view.ViewTreeObserver liveObserver =
+                        terminalToolbarViewPager.getViewTreeObserver();
+                    if (liveObserver.isAlive())
+                        liveObserver.removeOnPreDrawListener(this);
+                    terminalToolbarViewPager.post(() -> ensureTerminalToolbarAdapter(deferredTextInput));
+                    return true;
+                }
+            });
+        }
+        ViewGroup.LayoutParams layoutParams = terminalToolbarViewPager.getLayoutParams();
+        mTerminalToolbarDefaultHeight = layoutParams.height;
+        setTerminalToolbarHeight();
+    }
+
+    private void ensureTerminalToolbarAdapter(String savedTextInput) {
+        if (mIsInvalidState)
+            return;
+        final ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
+        if (terminalToolbarViewPager == null || terminalToolbarViewPager.getAdapter() != null)
+            return;
         terminalToolbarViewPager.setAdapter(new TerminalToolbarViewPager.PageAdapter(this, savedTextInput));
         terminalToolbarViewPager.addOnPageChangeListener(new TerminalToolbarViewPager.OnPageChangeListener(this, terminalToolbarViewPager));
     }
@@ -593,7 +647,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         layoutParams.height = Math.round(mTerminalToolbarDefaultHeight * matrix * mProperties.getTerminalToolbarHeightScaleFactor());
         terminalToolbarViewPager.setLayoutParams(layoutParams);
         extraKeysBackground.setLayoutParams(layoutParams);
-        extraKeysBackgroundBlur.setLayoutParams(layoutParams);
+        if (extraKeysBackgroundBlur != null)
+            extraKeysBackgroundBlur.setLayoutParams(layoutParams);
     }
 
     public void toggleTerminalToolbar() {
@@ -604,13 +659,15 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         Logger.showToast(this, showNow ? getString(R.string.msg_enabling_terminal_toolbar) : getString(R.string.msg_disabling_terminal_toolbar), true);
     
         updateViewVisibility(terminalToolbarViewPager, showNow);
-        updateViewVisibility(R.id.extrakeys_backgroundblur, showNow);
-        updateViewVisibility(R.id.extrakeys_background, showNow);
-    
+        configureExtraKeysBackground();
+
         isToolbarHidden = !showNow;
     
-        if (showNow && isTerminalToolbarTextInputViewSelected()) {
-            findViewById(R.id.terminal_toolbar_text_input).requestFocus();
+        if (showNow) {
+            ensureTerminalToolbarAdapter(null);
+            if (isTerminalToolbarTextInputViewSelected()) {
+                findViewById(R.id.terminal_toolbar_text_input).requestFocus();
+            }
         }
     }
     

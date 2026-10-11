@@ -17,13 +17,11 @@
         android:layout_marginVertical="0dp"
         android:orientation="vertical">
 
-        <com.github.mmin18.widget.RealtimeBlurView
-            android:id="@+id/terminal_background_blur"
+        <ViewStub
+            android:id="@+id/terminal_background_blur_stub"
+            android:layout="@layout/stub_terminal_background_blur"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone"
-            app:realtimeBlurRadius="10dp"
-            app:realtimeOverlayColor="@android:color/transparent" />
+            android:layout_height="match_parent" />
 
         <androidx.drawerlayout.widget.DrawerLayout
             android:id="@+id/drawer_layout"
@@ -60,12 +58,11 @@
                 android:layout_gravity="start"
                 android:orientation="vertical">
 
-                <com.github.mmin18.widget.RealtimeBlurView
-                    android:id="@+id/sessions_backgroundblur"
+                <ViewStub
+                    android:id="@+id/sessions_blur_stub"
+                    android:layout="@layout/stub_sessions_blur"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    app:realtimeBlurRadius="10dp"
-                    app:realtimeOverlayColor="@android:color/transparent" />
+                    android:layout_height="match_parent" />
 
                 <View
                     android:id="@+id/sessions_background"
@@ -141,13 +138,12 @@
             </RelativeLayout>
         </androidx.drawerlayout.widget.DrawerLayout>
 
-        <com.github.mmin18.widget.RealtimeBlurView
-            android:id="@+id/extrakeys_backgroundblur"
+        <ViewStub
+            android:id="@+id/extrakeys_blur_stub"
+            android:layout="@layout/stub_extrakeys_blur"
             android:layout_width="match_parent"
             android:layout_height="37.5dp"
-            android:layout_alignParentBottom="true"
-            app:realtimeBlurRadius="10dp"
-            app:realtimeOverlayColor="@android:color/transparent" />
+            android:layout_alignParentBottom="true" />
 
         <View
             android:id="@+id/extrakeys_background"

@@ -410,9 +410,11 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     
     private void configureExtraKeysBackground() {
         View extraKeysBackground = findViewById(R.id.extrakeys_background);
-        boolean isToolbarToggled = mPreferences.toogleShowTerminalToolbar();
+        // NB: read-only check. toogleShowTerminalToolbar() flips the persisted value, so it
+        // must only be called for actual user toggles (see toggleTerminalToolbar()).
+        boolean isToolbarShown = mPreferences.shouldShowTerminalToolbar();
 
-        if (!isToolbarToggled) {
+        if (!isToolbarShown) {
             setBlurViewVisibility(R.id.extrakeys_blur_stub, R.id.extrakeys_backgroundblur, false);
             extraKeysBackground.setVisibility(View.GONE);
         } else {
@@ -659,7 +661,9 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         Logger.showToast(this, showNow ? getString(R.string.msg_enabling_terminal_toolbar) : getString(R.string.msg_disabling_terminal_toolbar), true);
     
         updateViewVisibility(terminalToolbarViewPager, showNow);
-        configureExtraKeysBackground();
+        setBlurViewVisibility(R.id.extrakeys_blur_stub, R.id.extrakeys_backgroundblur,
+            showNow && mPreferences.isExtraKeysBlurEnabled());
+        updateViewVisibility(R.id.extrakeys_background, showNow);
 
         isToolbarHidden = !showNow;
     

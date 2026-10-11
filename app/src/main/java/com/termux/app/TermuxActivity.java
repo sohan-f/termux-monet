@@ -337,6 +337,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             addTermuxActivityRootViewGlobalLayoutListener();
     
         configureViewVisibility(R.id.terminal_monetbackground, mPreferences.isMonetBackgroundEnabled());
+        configureViewVisibility(R.id.terminal_background_blur,
+            mPreferences.isBackgroundImageBlurEnabled() && mPreferences.isBackgroundImageEnabled());
         configureBackgroundBlur(R.id.sessions_backgroundblur, R.id.sessions_background, mPreferences.isSessionsBlurEnabled(), 0.5f);
         configureExtraKeysBackground();
     
@@ -355,6 +357,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             mTermuxTerminalViewClient.onResume();
 
         configureViewVisibility(R.id.terminal_monetbackground, mPreferences.isMonetBackgroundEnabled());
+        configureViewVisibility(R.id.terminal_background_blur,
+            mPreferences.isBackgroundImageBlurEnabled() && mPreferences.isBackgroundImageEnabled());
         configureBackgroundBlur(R.id.sessions_backgroundblur, R.id.sessions_background, mPreferences.isSessionsBlurEnabled(), 0.5f);
         configureExtraKeysBackground();
         

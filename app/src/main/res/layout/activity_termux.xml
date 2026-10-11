@@ -17,6 +17,14 @@
         android:layout_marginVertical="0dp"
         android:orientation="vertical">
 
+        <com.github.mmin18.widget.RealtimeBlurView
+            android:id="@+id/terminal_background_blur"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            app:realtimeBlurRadius="10dp"
+            app:realtimeOverlayColor="@android:color/transparent" />
+
         <androidx.drawerlayout.widget.DrawerLayout
             android:id="@+id/drawer_layout"
             android:layout_width="match_parent"

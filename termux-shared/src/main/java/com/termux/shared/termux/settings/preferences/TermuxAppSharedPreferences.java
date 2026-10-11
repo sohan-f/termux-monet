@@ -233,6 +233,14 @@ public class TermuxAppSharedPreferences extends AppSharedPreferences {
     public void setBackgroundImageEnabled(boolean value) {
         SharedPreferenceUtils.setBoolean(mSharedPreferences, TERMUX_APP.KEY_BACKGROUND_IMAGE_ENABLED, value, false);
     }
+
+    public boolean isBackgroundImageBlurEnabled() {
+        return SharedPreferenceUtils.getBoolean(mSharedPreferences, TERMUX_APP.KEY_BACKGROUND_IMAGE_BLUR_ENABLED, TERMUX_APP.DEFAULT_VALUE_BACKGROUND_IMAGE_BLUR_ENABLED);
+    }
+
+    public void setBackgroundImageBlurEnabled(boolean value) {
+        SharedPreferenceUtils.setBoolean(mSharedPreferences, TERMUX_APP.KEY_BACKGROUND_IMAGE_BLUR_ENABLED, value, false);
+    }
     
     public boolean isExtraKeysBlurEnabled() {
         return SharedPreferenceUtils.getBoolean(mSharedPreferences, TERMUX_APP.KEY_EXTRAKEYS_BLUR_ENABLED, TERMUX_APP.DEFAULT_VALUE_EXTRAKEYS_BLUR_ENABLED);

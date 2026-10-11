@@ -202,6 +202,13 @@ public final class TermuxPreferenceConstants {
         public static final String KEY_BACKGROUND_IMAGE_ENABLED = "background_image_enabled";
 
         public static final boolean DEFAULT_VALUE_BACKGROUND_IMAGE_ENABLED = false;
+
+        /**
+         * Defines the key for whether background image blur is enabled or not.
+         */
+        public static final String KEY_BACKGROUND_IMAGE_BLUR_ENABLED = "background_image_blur_enabled";
+
+        public static final boolean DEFAULT_VALUE_BACKGROUND_IMAGE_BLUR_ENABLED = false;
         
         /**
          * Defines the key for whether extrakeys blur is enabled or not.

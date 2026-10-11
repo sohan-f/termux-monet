@@ -104,7 +104,7 @@
     <string name="termux_background_image_enabled_title">عرض صورة الخلفية</string>
     <string name="termux_background_image_enabled_on">سيتم تمكين صورة الخلفية.</string>
     <string name="termux_api_preferences_summary">تفضيلات &amp;TERMUX_API_APP_NAME؛ برنامج</string>
-    <string name="termux_monet_background_enabled_title">خلفية مونيه (غير مستقرة)</string>
+    <string name="termux_monet_background_enabled_title">خلفية مونيه</string>
     <string name="termux_monet_background_enabled_on">سيتم تمكين خلفية مونيه.</string>
     <string name="termux_extrakeys_blur_enabled_off">سيتم تعطيل الخلفية غير الواضحة للمفاتيح الإضافية. يضيف خلفية شفافة وغير واضحة إلى المفاتيح الإضافية. (قد يؤثر على الأداء) (افتراضي)</string>
     <string name="termux_sessions_header">قائمة الجلسات</string>

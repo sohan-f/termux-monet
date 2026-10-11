@@ -132,7 +132,7 @@
     <string name="termux_monet_background_enabled_on">Nền Monet sẽ được bật.</string>
     <string name="termux_sessions_blur_enabled_title">Phiên bản nền mờ</string>
     <string name="termux_sessions_header">Menu</string>
-    <string name="termux_monet_background_enabled_title">Bối cảnh của Monet (Không ổn định)</string>
+    <string name="termux_monet_background_enabled_title">Bối cảnh của Monet</string>
     <string name="termux_monet_background_enabled_off">Nền Terminal Monet sẽ bị vô hiệu hóa. Biến nền terminal thành monet (Mặc định)</string>
     <string name="termux_extrakeys_blur_enabled_title">Phím bổ sung để làm mờ nền</string>
     <string name="termux_extrakeys_header">Các phím bổ sung</string>

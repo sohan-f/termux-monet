@@ -522,6 +522,13 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
                 TerminalSession session = mActivity.getCurrentSession();
                 if (session != null && session.getEmulator() != null) {
                     session.getEmulator().mColors.reset();
+                    // The emulator colors may have been (re)derived after updateBackground()
+                    // already ran (e.g. activity recreation on a system theme toggle wins the
+                    // race against this background thread), leaving the window background and
+                    // system bars painted with stale colors. Re-sync them now that the fresh
+                    // colors are in place. Non-forced: a no-op for already-set image
+                    // backgrounds, a cheap repaint otherwise.
+                    mActivity.getmTermuxBackgroundManager().updateBackground(false);
                 }
             });
         }, "termux-font-colors").start();

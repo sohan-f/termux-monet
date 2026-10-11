@@ -234,7 +234,7 @@ public class TermuxBackgroundManager {
         if (session != null && session.getEmulator() != null) {
             int backgroundColor = session.getEmulator().mColors.mCurrentColors[TextStyle.COLOR_INDEX_BACKGROUND];
             mActivity.getWindow().getDecorView().setBackgroundColor(backgroundColor);
-            updateStatusBar(false, backgroundColor);
+            updateSystemBars(false, backgroundColor);
         }
     }
 
@@ -252,7 +252,7 @@ public class TermuxBackgroundManager {
                     ImageUtils.addOverlay(drawable, mActivity.getProperties().getBackgroundOverlayColor());
                     handler.post(() -> {
                         mActivity.getWindow().getDecorView().setBackground(drawable);
-                        updateStatusBar(true, 0);
+                        updateSystemBars(true, 0);
                     });
                 } else {
                     Logger.logErrorAndShowToast(mActivity, LOG_TAG, mActivity.getString(R.string.error_background_image_loading_failed));
@@ -271,14 +271,14 @@ public class TermuxBackgroundManager {
     }
 
     /**
-     * Sync the status bar with the terminal background.
+     * Sync the system bars with the terminal background.
      *
      * <p>
-     * When a background image is set, the status bar is made transparent so the image
-     * shows through it. Otherwise the status bar is painted with the terminal background
-     * color so it blends seamlessly with the terminal. The {@code FLAG_TRANSLUCENT_STATUS}
-     * coming from the theme is cleared in both cases since it forces the system scrim
-     * and ignores {@link Window#setStatusBarColor(int)}.
+     * When a background image is set, the status and navigation bars are made transparent
+     * so the image shows through them. Otherwise both bars are painted with the terminal
+     * background color so they blend seamlessly with the terminal. The
+     * {@code FLAG_TRANSLUCENT_STATUS} coming from the theme is cleared in both cases since
+     * it forces the system scrim and ignores {@link Window#setStatusBarColor(int)}.
      * </p>
      *
      * <p>Must be called on the main thread.</p>
@@ -286,15 +286,19 @@ public class TermuxBackgroundManager {
      * @param imageEnabled    Whether the terminal background is currently an image.
      * @param backgroundColor Terminal background color, used when {@code imageEnabled} is false.
      */
-    private void updateStatusBar(boolean imageEnabled, int backgroundColor) {
+    private void updateSystemBars(boolean imageEnabled, int backgroundColor) {
         Window window = mActivity.getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         if (imageEnabled) {
             window.setStatusBarColor(Color.TRANSPARENT);
+            window.setNavigationBarColor(Color.TRANSPARENT);
         } else {
             window.setStatusBarColor(backgroundColor);
-            setLightStatusBarIcons(window,
-                TerminalColors.getPerceivedBrightnessOfColor(backgroundColor) >= 130);
+            window.setNavigationBarColor(backgroundColor);
+            boolean lightBackground =
+                TerminalColors.getPerceivedBrightnessOfColor(backgroundColor) >= 130;
+            setLightStatusBarIcons(window, lightBackground);
+            setLightNavigationBarIcons(window, lightBackground);
         }
     }
 
@@ -302,8 +306,7 @@ public class TermuxBackgroundManager {
      * Toggle dark status bar icons for light backgrounds and vice versa, using the same
      * brightness threshold as the terminal cursor color logic.
      */
-    private static void setLightStatusBarIcons(Window window, boolean lightBackground) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+    private static void setLightStatusBarIcons(Window window, boolean lightBackground) {        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             WindowInsetsController controller = window.getInsetsController();
             if (controller == null)
                 return;
@@ -322,6 +325,35 @@ public class TermuxBackgroundManager {
                 flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             else
                 flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            decorView.setSystemUiVisibility(flags);
+        }
+    }
+
+    /**
+     * Toggle dark navigation bar buttons for light backgrounds and vice versa, mirroring
+     * the status bar icon logic above ({@code minSdkVersion} is 26, so the legacy flag
+     * branch covers all pre-R devices).
+     */
+    private static void setLightNavigationBarIcons(Window window, boolean lightBackground) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller == null)
+                return;
+            if (lightBackground) {
+                controller.setSystemBarsAppearance(
+                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+            } else {
+                controller.setSystemBarsAppearance(0,
+                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            View decorView = window.getDecorView();
+            int flags = decorView.getSystemUiVisibility();
+            if (lightBackground)
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            else
+                flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
             decorView.setSystemUiVisibility(flags);
         }
     }

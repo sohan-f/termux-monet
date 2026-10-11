@@ -519,17 +519,32 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
                 if (mActivity.isFinishing() || mActivity.getTerminalView() == null)
                     return;
                 mActivity.getTerminalView().setTypeface(resolvedTypeface, resolvedItalicTypeface);
-                TerminalSession session = mActivity.getCurrentSession();
-                if (session != null && session.getEmulator() != null) {
-                    session.getEmulator().mColors.reset();
-                    // The emulator colors may have been (re)derived after updateBackground()
-                    // already ran (e.g. activity recreation on a system theme toggle wins the
-                    // race against this background thread), leaving the window background and
-                    // system bars painted with stale colors. Re-sync them now that the fresh
-                    // colors are in place. Non-forced: a no-op for already-set image
-                    // backgrounds, a cheap repaint otherwise.
-                    mActivity.getmTermuxBackgroundManager().updateBackground(false);
+                // The shared scheme was just refreshed: reset every session emulator, not
+                // just the current one. Non-current sessions otherwise keep pre-refresh
+                // colors (e.g. the previous night mode after a system theme toggle) and
+                // would repaint the terminal, window background and system bars with stale
+                // colors when switched to. If the service hasn't connected yet, no sessions
+                // exist at all and ones created later pick up the fresh scheme at
+                // construction — so every startup ordering converges. Non-forced re-sync
+                // below is a no-op for already-set image backgrounds, a cheap repaint
+                // otherwise; it also covers the case where updateBackground() ran from
+                // onStart/onServiceConnected before this thread finished.
+                TermuxService service = mActivity.getTermuxService();
+                if (service != null) {
+                    for (int i = 0; i < service.getTermuxSessionsSize(); i++) {
+                        TermuxSession termuxSession = service.getTermuxSession(i);
+                        if (termuxSession == null)
+                            continue;
+                        TerminalSession terminalSession = termuxSession.getTerminalSession();
+                        if (terminalSession != null && terminalSession.getEmulator() != null)
+                            terminalSession.getEmulator().mColors.reset();
+                    }
+                } else {
+                    TerminalSession session = mActivity.getCurrentSession();
+                    if (session != null && session.getEmulator() != null)
+                        session.getEmulator().mColors.reset();
                 }
+                mActivity.getmTermuxBackgroundManager().updateBackground(false);
             });
         }, "termux-font-colors").start();
     }

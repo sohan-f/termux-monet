@@ -5,16 +5,21 @@ import android.content.res.Configuration;
 import android.os.Build;
 
 import com.google.android.material.color.MaterialColors;
+import com.google.android.material.color.utilities.Blend;
+import com.google.android.material.color.utilities.Hct;
 import com.termux.shared.logger.Logger;
 import com.termux.terminal.TerminalColors;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
  * Derives the terminal 16-color ANSI palette from the Material You (Monet) dynamic
- * color palettes exposed by the framework on Android 12+ ({@code android:color/system_accent1_*},
- * {@code system_accent2_*}, {@code system_accent3_*}, {@code system_neutral1_*}).
+ * color system on Android 12+ ({@code android:color/system_neutral1_*},
+ * {@code system_neutral2_*}) combined with the live theme seed ({@code colorPrimary})
+ * and error roles.
  *
  * <p>
  * Only used when the user has no {@code ~/.termux/colors.properties} file; an existing
@@ -22,31 +27,62 @@ import java.util.Set;
  * Indexes 16-255 keep the stock xterm values.
  * </p>
  *
+ * <h2>Why not the raw {@code system_accent} tones?</h2>
  * <p>
- * Role mapping (my design decision, not in M3 — the framework only exposes three
- * chromatic hues, so each accent palette serves two ANSI roles):
- * blue/yellow &lt;- accent1 (primary), green/cyan &lt;- accent2, magenta &lt;- accent3,
- * red &lt;- the live theme error roles (the only red-hue family Monet guarantees),
- * mid grays &lt;- seed-tinted neutral2, black/white and foreground/background &lt;- neutral1,
- * cursor &lt;- accent1 at the M3 primary tone. Exact hues follow the user's wallpaper.
+ * The framework accent slots come from the default {@code TonalSpot} scheme, whose
+ * chroma is deliberately low (primary ~36, secondary ~16, tertiary ~24) because phone
+ * UI surfaces must stay calm. Terminal ANSI colors need the opposite: vivid,
+ * instantly distinguishable hues (popular schemes such as Dracula sit at chroma
+ * ~40-80). Picking raw accent tones therefore always looks dark, gray and dull, and
+ * three Monet families cannot cover six semantic hues anyway — e.g. "yellow" would
+ * just be a lighter shade of the primary hue instead of actually yellow.
  * </p>
  *
+ * <h2>Approach: vibrant HCT synthesis + M3 harmonization</h2>
+ * <ol>
+ *   <li><b>Vivid semantic bases.</b> Each ANSI role starts from the HCT hue of its
+ *       classic xterm counterpart and is synthesized at a fixed high chroma and a
+ *       fixed tone via {@link Hct#from(double, double, double)}. HCT tone maps
+ *       almost 1:1 to perceived lightness independent of hue, so one tone pair per
+ *       mode gives every role the same guaranteed contrast (dark: dim 65 / bright 76
+ *       for ~6.9:1 and ~9.7:1; light: dim 45 / bright 35 for ~5:1 and ~7:1 — the
+ *       "bright" variants on light backgrounds are darker, which is what keeps them
+ *       readable).</li>
+ *   <li><b>Wallpaper tint via M3 harmonize.</b> Each vivid base is passed through
+ *       {@link Blend#harmonize}, the Material Color Utilities hue rotation toward the
+ *       theme seed ({@code colorPrimary}). It shifts hue at most 15 degrees, so
+ *       colors stay recognizable (red stays red) while picking up the wallpaper
+ *       tint. Red is harmonized toward the theme error color instead, preserving
+ *       its danger semantics. Harmonize only touches hue, so chroma, tone and
+ *       contrast survive untouched.</li>
+ *   <li><b>Contrast + distinctness gates.</b> Every chromatic role must clear
+ *       {@link #MIN_CONTRAST} (4.5:1, WCAG AA for normal text — M3's 3:1 is a large
+ *       text minimum and lets dull colors through), must not duplicate an already
+ *       placed color, and must keep a minimum HCT hue distance from previously
+ *       placed chromatics (harmonize can otherwise pull neighboring hues such as
+ *       yellow/green together on some wallpapers). Violations step the tone toward
+ *       the readable direction until they clear.</li>
+ *   <li><b>Monochrome wallpapers.</b> When the seed is near-gray (chroma &lt; 8),
+ *       its hue is meaningless, so harmonization is skipped and the pure semantic
+ *       hues are used directly.</li>
+ * </ol>
+ *
  * <p>
- * Robustness: every chromatic role is picked from a preference-ordered candidate list of
- * (palette, tone) slots. The first candidate with a WCAG contrast ratio of at least
- * {@link #MIN_CONTRAST} against the background <i>and</i> not already used by another role
- * wins. Afterwards the non-red chromatics are harmonized toward the theme primary
- * (M3 {@code Blend.harmonize} color science) subject to the same contrast and
- * distinctness gates, so the palette stays cohesive without losing readability.
- * Minimum 3:1 comes from M3 (3:1 large text minimum; roles guarantee 3:1 pairs).
+ * Background, foreground and the gray roles (0/7/8/15) keep the Monet neutral
+ * palettes so the terminal surface still matches the system theme; only the six
+ * chromatic hues are synthesized.
  * </p>
  */
 public final class MonetTerminalColors {
 
     private static final String LOG_TAG = "MonetTerminalColors";
 
-    /** Minimum WCAG contrast ratio of a chromatic ANSI color against the background. */
-    static final double MIN_CONTRAST = 3.0;
+    /**
+     * Minimum WCAG contrast ratio of an ANSI color against the background. 4.5:1 is
+     * the WCAG AA floor for normal-size text; M3's 3:1 large-text minimum is too
+     * permissive here and lets dark/dull colors pass.
+     */
+    static final double MIN_CONTRAST = 4.5;
 
     // Process-lifetime cache: system colors only change on wallpaper/theme change.
     private static int sCachedWallpaperId = Integer.MIN_VALUE;
@@ -85,27 +121,49 @@ public final class MonetTerminalColors {
     /** ANSI role order: primaries first so red/green/blue win collisions over their partners. */
     private static final int[] ROLE_ORDER = {1, 2, 4, 3, 5, 6};
 
-    /** Candidate (palette, tone) slots per ANSI role for dark backgrounds: [role][dim/bright][candidates]. */
-    private static final int[][][][] DARK_CANDIDATES = {
-        null, // 0 black: fixed neutral
-        {{{AERR, E_CONT}, {A3, T500}, {A3, T400}, {A3, T600}, {A3, T300}}, {{AERR, E_ERR}, {A3, T200}, {A3, T300}, {A3, T100}}}, // 1 red
-        {{{A2, T500}, {A2, T400}, {A2, T600}, {A2, T300}}, {{A2, T200}, {A2, T300}, {A2, T100}}}, // 2 green
-        {{{A1, T300}, {A1, T400}, {A1, T200}, {A1, T500}}, {{A1, T100}, {A1, T200}, {A1, T300}}}, // 3 yellow
-        {{{A1, T500}, {A1, T400}, {A1, T600}, {A1, T300}}, {{A1, T200}, {A1, T300}, {A1, T100}}}, // 4 blue
-        {{{A3, T300}, {A3, T400}, {A3, T200}, {A3, T500}}, {{A3, T100}, {A3, T200}, {A3, T300}}}, // 5 magenta
-        {{{A2, T300}, {A2, T400}, {A2, T200}, {A2, T500}}, {{A2, T100}, {A2, T200}, {A2, T300}}}, // 6 cyan
+    /**
+     * Classic xterm dim colors, used only as hue anchors. Their HCT hues are the
+     * semantic identities (red ~27, yellow ~111, green ~142, cyan ~197, blue ~265,
+     * magenta ~335); chroma and tone always come from the vivid targets below.
+     */
+    private static final int[] BASE_DIM_ARGB = {
+        0xFFCD0000, // 1 red
+        0xFF00CD00, // 2 green
+        0xFFCDCD00, // 3 yellow
+        0xFF6495ED, // 4 blue
+        0xFFCD00CD, // 5 magenta
+        0xFF00CDCD, // 6 cyan
     };
 
-    /** Candidate (palette, tone) slots per ANSI role for light backgrounds. */
-    private static final int[][][][] LIGHT_CANDIDATES = {
-        null, // 0 black: fixed neutral
-        {{{AERR, E_ERR}, {A3, T600}, {A3, T500}, {A3, T700}}, {{AERR, E_ONCONT}, {A3, T800}, {A3, T700}, {A3, T900}}}, // 1 red
-        {{{A2, T600}, {A2, T500}, {A2, T700}}, {{A2, T800}, {A2, T700}, {A2, T900}}}, // 2 green
-        {{{A1, T500}, {A1, T600}, {A1, T400}}, {{A1, T700}, {A1, T800}, {A1, T600}}}, // 3 yellow
-        {{{A1, T600}, {A1, T500}, {A1, T700}}, {{A1, T800}, {A1, T700}, {A1, T900}}}, // 4 blue
-        {{{A3, T500}, {A3, T600}, {A3, T400}}, {{A3, T700}, {A3, T800}, {A3, T600}}}, // 5 magenta
-        {{{A2, T500}, {A2, T600}, {A2, T400}}, {{A2, T700}, {A2, T800}, {A2, T600}}}, // 6 cyan
-    };
+    /** HCT hues of {@link #BASE_DIM_ARGB}, computed once (Hct is pure JVM math). */
+    private static final double[] BASE_HUES = baseHues();
+
+    private static double[] baseHues() {
+        double[] hues = new double[BASE_DIM_ARGB.length];
+        for (int i = 0; i < BASE_DIM_ARGB.length; i++)
+            hues[i] = Hct.fromInt(BASE_DIM_ARGB[i]).getHue();
+        return hues;
+    }
+
+    // Vivid synthesis targets: (chroma, tone) per mode and brightness level.
+    // Dark tones 65/76 clear ~6.9:1/~9.7:1; light tones 45/35 clear ~5:1/~7:1,
+    // with chroma requests at or above the per-hue gamut ceiling so each hue
+    // renders as vivid as physically possible at its tone (cf. Dracula 37-80).
+    private static final double DIM_CHROMA_DARK = 85.0;
+    private static final double DIM_TONE_DARK = 65.0;
+    private static final double BRIGHT_CHROMA_DARK = 90.0;
+    private static final double BRIGHT_TONE_DARK = 76.0;
+    private static final double DIM_CHROMA_LIGHT = 70.0;
+    private static final double DIM_TONE_LIGHT = 45.0;
+    private static final double BRIGHT_CHROMA_LIGHT = 75.0;
+    private static final double BRIGHT_TONE_LIGHT = 35.0;
+
+    /** Seed chroma below this is treated as monochrome: harmonization is skipped. */
+    static final double MONO_CHROMA_THRESHOLD = 8.0;
+    /** Minimum HCT hue separation between two placed chromatic roles. */
+    static final double MIN_HUE_SEPARATION = 12.0;
+    /** Hue rivals closer than this in tone are resolved by tone-stepping instead. */
+    static final double MIN_TONE_SEPARATION = 8.0;
 
     private MonetTerminalColors() {}
 
@@ -207,11 +265,10 @@ public final class MonetTerminalColors {
                 com.google.android.material.R.attr.colorErrorContainer, tones.accents[A3][T500]);
             tones.accents[AERR][E_ONCONT] = MaterialColors.getColor(context,
                 com.google.android.material.R.attr.colorOnErrorContainer, tones.accents[A3][T800]);
-            Scheme scheme = deriveScheme(tones, night);
-            int primary = MaterialColors.getColor(context, androidx.appcompat.R.attr.colorPrimary,
-                scheme.ansi[12]);
-            final int seedPrimary = primary;
-            applyHarmonize(scheme, color -> MaterialColors.harmonize(color, seedPrimary));
+            // Theme seed for harmonization: the M3 primary role carries the wallpaper hue.
+            int seed = MaterialColors.getColor(context, androidx.appcompat.R.attr.colorPrimary,
+                tones.accents[A1][T600]);
+            Scheme scheme = deriveScheme(tones, night, seed);
             if (useCache) {
                 synchronized (MonetTerminalColors.class) {
                     sCachedNight = night;
@@ -242,17 +299,22 @@ public final class MonetTerminalColors {
     }
 
     /**
-     * Pure selector: derive a terminal scheme from resolved Monet tones. Night mode picks
-     * the candidate tables and fixed roles; no Android calls, plain-JVM testable.
+     * Pure selector: derive a terminal scheme from resolved Monet tones plus the theme
+     * seed color. Night mode picks the vivid tone targets and fixed roles; no Android
+     * calls, plain-JVM testable (Hct/Blend are pure JVM math).
+     *
+     * @param tones resolved framework palettes (neutrals for surfaces, error roles
+     *              as the red hue anchor).
+     * @param night true for dark backgrounds, false for light ones.
+     * @param seedArgb theme seed ({@code colorPrimary}) whose hue tints the palette.
      */
-    static Scheme deriveScheme(ResolvedTones tones, boolean night) {
+    static Scheme deriveScheme(ResolvedTones tones, boolean night, int seedArgb) {
         Scheme scheme = new Scheme();
         int[] n = tones.neutral;
         int[] n2 = tones.neutral2;
         if (night) {
             scheme.foreground = n[N50];
             scheme.background = n[N900];
-            scheme.cursor = gatedCursor(tones.accents[A1][T200], scheme.background, true);
             scheme.ansi[0] = n[N800];
             scheme.ansi[7] = n2[0];
             scheme.ansi[8] = n2[1];
@@ -260,12 +322,21 @@ public final class MonetTerminalColors {
         } else {
             scheme.foreground = n[N900];
             scheme.background = n[N50];
-            scheme.cursor = gatedCursor(tones.accents[A1][T600], scheme.background, false);
             scheme.ansi[0] = n[N900];
             scheme.ansi[7] = n2[0];
             scheme.ansi[8] = n2[1];
             scheme.ansi[15] = n[N100];
         }
+        Hct seedHct = Hct.fromInt(seedArgb);
+        boolean monoSeed = seedHct.getChroma() < MONO_CHROMA_THRESHOLD;
+        scheme.cursor = vividCursor(seedHct, monoSeed, scheme.background, night);
+
+        int errorArgb = tones.accents[AERR][E_ERR];
+        // Red keeps the error hue so danger stays red on every wallpaper; if the theme
+        // error role itself is achromatic something is very wrong — skip harmonizing.
+        boolean monoError = Hct.fromInt(errorArgb).getChroma() < MONO_CHROMA_THRESHOLD;
+        int redKey = monoError ? 0 : errorArgb;
+
         Set<Integer> taken = new HashSet<>();
         taken.add(scheme.foreground);
         taken.add(scheme.background);
@@ -274,13 +345,30 @@ public final class MonetTerminalColors {
         taken.add(scheme.ansi[7]);
         taken.add(scheme.ansi[8]);
         taken.add(scheme.ansi[15]);
-        int[][][][] tables = night ? DARK_CANDIDATES : LIGHT_CANDIDATES;
+        List<double[]> placed = new ArrayList<>();
         for (int role : ROLE_ORDER) {
-            int[][][] pair = tables[role];
-            int dim = select(pair[0], tones.accents, scheme.background, taken);
+            double baseHue = BASE_HUES[role - 1];
+            int keyArgb;
+            if (role == 1) {
+                keyArgb = redKey;
+            } else if (monoSeed) {
+                // Monochrome wallpaper: the seed hue is meaningless, keep pure bases.
+                keyArgb = 0;
+            } else {
+                keyArgb = seedArgb;
+            }
+            int dim = vividRole(baseHue, keyArgb,
+                night ? DIM_CHROMA_DARK : DIM_CHROMA_LIGHT,
+                night ? DIM_TONE_DARK : DIM_TONE_LIGHT,
+                scheme.background, taken, placed, night);
             taken.add(dim);
-            int bright = select(pair[1], tones.accents, scheme.background, taken);
+            placed.add(hueToneOf(dim));
+            int bright = vividRole(baseHue, keyArgb,
+                night ? BRIGHT_CHROMA_DARK : BRIGHT_CHROMA_LIGHT,
+                night ? BRIGHT_TONE_DARK : BRIGHT_TONE_LIGHT,
+                scheme.background, taken, placed, night);
             taken.add(bright);
+            placed.add(hueToneOf(bright));
             scheme.ansi[role] = dim;
             scheme.ansi[role + 8] = bright;
         }
@@ -288,55 +376,70 @@ public final class MonetTerminalColors {
     }
 
     /**
-     * Harmonize the non-red chromatics of an already-derived scheme, keeping the result only
-     * when it still meets {@link #MIN_CONTRAST} and stays distinct. Red (1/9) is excluded to
-     * preserve the error-role anchor. The harmonize function is injected so this stays
-     * plain-JVM testable (MDC's {@code Blend} needs real android.graphics at runtime).
+     * Synthesize one vivid ANSI color: HCT color at the requested chroma/tone for the
+     * semantic base hue, harmonized toward the key color, then tone-stepped until it
+     * clears the contrast, uniqueness and hue-separation gates.
+     *
+     * @param baseHue hue anchor of the ANSI role (from {@link #BASE_HUES}).
+     * @param keyArgb harmonization key (seed or error color), or 0 to skip harmonizing.
      */
-    static void applyHarmonize(Scheme scheme, java.util.function.IntUnaryOperator harmonize) {
-        Set<Integer> taken = new HashSet<>();
-        taken.add(scheme.foreground);
-        taken.add(scheme.background);
-        taken.add(scheme.cursor);
-        taken.add(scheme.ansi[0]);
-        taken.add(scheme.ansi[1]);
-        taken.add(scheme.ansi[7]);
-        taken.add(scheme.ansi[8]);
-        taken.add(scheme.ansi[9]);
-        taken.add(scheme.ansi[15]);
-        for (int role : new int[] {2, 4, 3, 5, 6, 10, 11, 12, 13, 14}) {
-            int harmonized = harmonize.applyAsInt(scheme.ansi[role]);
-            if (!taken.contains(harmonized)
-                && contrastRatio(harmonized, scheme.background) >= MIN_CONTRAST) {
-                scheme.ansi[role] = harmonized;
-            }
-            taken.add(scheme.ansi[role]);
+    private static int vividRole(double baseHue, int keyArgb,
+                                 double reqChroma, double reqTone, int background,
+                                 Set<Integer> taken, List<double[]> placed, boolean night) {
+        int color = Hct.from(baseHue, reqChroma, reqTone).toInt();
+        if (keyArgb != 0)
+            color = Blend.harmonize(color, keyArgb);
+        // Re-read everything post-harmonize: Blend only rotates hue, but the gate
+        // below must work on the true hue (and guards against any solver drift).
+        Hct hct = Hct.fromInt(color);
+        double hue = hct.getHue();
+        double chroma = hct.getChroma();
+        double tone = hct.getTone();
+        for (int step = 0; step < 8
+            && (contrastRatio(color, background) < MIN_CONTRAST
+                || taken.contains(color)
+                || hueCollides(hue, tone, placed)); step++) {
+            tone = night ? Math.min(92.0, tone + 5.0) : Math.max(15.0, tone - 5.0);
+            color = Hct.from(hue, chroma, tone).toInt();
+            Hct stepped = Hct.fromInt(color);
+            hue = stepped.getHue();
+            chroma = stepped.getChroma();
+            tone = stepped.getTone();
+            if ((night && tone >= 92.0) || (!night && tone <= 15.0))
+                break;
         }
+        return color;
     }
 
-    /**
-     * Pick the first candidate that is unused and meets {@link #MIN_CONTRAST} against the
-     * background; fall back to the first readable candidate, then to the preferred one.
-     */
-    private static int select(int[][] candidates, int[][] palettes, int background, Set<Integer> taken) {
-        for (int[] c : candidates) {
-            int color = palettes[c[0]][c[1]];
-            if (!taken.contains(color) && contrastRatio(color, background) >= MIN_CONTRAST)
-                return color;
-        }
-        for (int[] c : candidates) {
-            int color = palettes[c[0]][c[1]];
+    /** Cursor uses the seed hue at a readable tone, falling back to white/black. */
+    private static int vividCursor(Hct seedHct, boolean monoSeed, int background, boolean night) {
+        if (!monoSeed) {
+            int color = Hct.from(seedHct.getHue(), 60.0, night ? 72.0 : 42.0).toInt();
             if (contrastRatio(color, background) >= MIN_CONTRAST)
                 return color;
         }
-        return palettes[candidates[0][0]][candidates[0][1]];
+        return night ? 0xFFFFFFFF : 0xFF000000;
     }
 
-    /** Cursor uses the M3 primary tone, falling back to white/black when it lacks contrast. */
-    private static int gatedCursor(int preferred, int background, boolean night) {
-        if (contrastRatio(preferred, background) >= MIN_CONTRAST)
-            return preferred;
-        return night ? 0xFFFFFFFF : 0xFF000000;
+    /** True when (hue, tone) sits too close to an already placed chromatic role. */
+    private static boolean hueCollides(double hue, double tone, List<double[]> placed) {
+        for (double[] ht : placed) {
+            if (hueDifference(hue, ht[0]) < MIN_HUE_SEPARATION
+                && Math.abs(tone - ht[1]) < MIN_TONE_SEPARATION)
+                return true;
+        }
+        return false;
+    }
+
+    private static double[] hueToneOf(int color) {
+        Hct hct = Hct.fromInt(color);
+        return new double[] {hct.getHue(), hct.getTone()};
+    }
+
+    /** Smallest circular distance between two HCT hues in degrees. */
+    static double hueDifference(double a, double b) {
+        double d = Math.abs(a - b) % 360.0;
+        return d > 180.0 ? 360.0 - d : d;
     }
 
     /** WCAG contrast ratio of two opaque ARGB colors. */

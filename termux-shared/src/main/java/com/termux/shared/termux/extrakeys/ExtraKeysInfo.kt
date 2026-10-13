@@ -1,14 +1,14 @@
-package com.termux.shared.termux.extrakeys;
+package com.termux.shared.termux.extrakeys
 
-import android.view.View;
-import android.widget.Button;
-import androidx.annotation.NonNull;
-import com.google.android.material.button.MaterialButton;
-import com.termux.shared.termux.extrakeys.ExtraKeysConstants.EXTRA_KEY_DISPLAY_MAPS;
-import com.termux.shared.termux.terminal.io.TerminalExtraKeys;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import android.view.View
+import android.widget.Button
+import androidx.annotation.NonNull
+import com.google.android.material.button.MaterialButton
+import com.termux.shared.termux.extrakeys.ExtraKeysConstants.EXTRA_KEY_DISPLAY_MAPS
+import com.termux.shared.termux.terminal.io.TerminalExtraKeys
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 
 /**
  * A {@link Class} that defines the info needed by {@link ExtraKeysView} to display the extra key
@@ -83,12 +83,12 @@ import org.json.JSONObject;
  *
  * For more info, check https://wiki.termux.com/wiki/Touch_Keyboard.
  */
-public class ExtraKeysInfo {
+class ExtraKeysInfo {
 
     /**
      * Matrix of buttons to be displayed in {@link ExtraKeysView}.
      */
-    private final ExtraKeyButton[][] mButtons;
+    private val mButtons: Array<Array<ExtraKeyButton>>
 
     /**
      * Initialize {@link ExtraKeysInfo}.
@@ -103,8 +103,9 @@ public class ExtraKeysInfo {
      *                           aliases for the actual key names. You can create your own or
      *                           optionally pass {@link ExtraKeysConstants#CONTROL_CHARS_ALIASES}.
      */
-    public ExtraKeysInfo(@NonNull String propertiesInfo, String style, @NonNull ExtraKeysConstants.ExtraKeyDisplayMap extraKeyAliasMap) throws JSONException {
-        mButtons = initExtraKeysInfo(propertiesInfo, getCharDisplayMapForStyle(style), extraKeyAliasMap);
+    @Throws(JSONException::class)
+    constructor(@NonNull propertiesInfo: String, style: String?, @NonNull extraKeyAliasMap: ExtraKeysConstants.ExtraKeyDisplayMap) {
+        mButtons = initExtraKeysInfo(propertiesInfo, getCharDisplayMapForStyle(style), extraKeyAliasMap)
     }
 
     /**
@@ -121,78 +122,69 @@ public class ExtraKeysInfo {
      *                           aliases for the actual key names. You can create your own or
      *                           optionally pass {@link ExtraKeysConstants#CONTROL_CHARS_ALIASES}.
      */
-    public ExtraKeysInfo(@NonNull String propertiesInfo, @NonNull ExtraKeysConstants.ExtraKeyDisplayMap extraKeyDisplayMap, @NonNull ExtraKeysConstants.ExtraKeyDisplayMap extraKeyAliasMap) throws JSONException {
-        mButtons = initExtraKeysInfo(propertiesInfo, extraKeyDisplayMap, extraKeyAliasMap);
+    @Throws(JSONException::class)
+    constructor(@NonNull propertiesInfo: String, @NonNull extraKeyDisplayMap: ExtraKeysConstants.ExtraKeyDisplayMap, @NonNull extraKeyAliasMap: ExtraKeysConstants.ExtraKeyDisplayMap) {
+        mButtons = initExtraKeysInfo(propertiesInfo, extraKeyDisplayMap, extraKeyAliasMap)
     }
 
-    private ExtraKeyButton[][] initExtraKeysInfo(@NonNull String propertiesInfo, @NonNull ExtraKeysConstants.ExtraKeyDisplayMap extraKeyDisplayMap, @NonNull ExtraKeysConstants.ExtraKeyDisplayMap extraKeyAliasMap) throws JSONException {
+    private fun initExtraKeysInfo(@NonNull propertiesInfo: String, @NonNull extraKeyDisplayMap: ExtraKeysConstants.ExtraKeyDisplayMap, @NonNull extraKeyAliasMap: ExtraKeysConstants.ExtraKeyDisplayMap): Array<Array<ExtraKeyButton>> {
         // Convert String propertiesInfo to Array of Arrays
-        JSONArray arr = new JSONArray(propertiesInfo);
-        Object[][] matrix = new Object[arr.length()][];
-        for (int i = 0; i < arr.length(); i++) {
-            JSONArray line = arr.getJSONArray(i);
-            matrix[i] = new Object[line.length()];
-            for (int j = 0; j < line.length(); j++) {
-                matrix[i][j] = line.get(j);
-            }
+        val arr = JSONArray(propertiesInfo)
+        val matrix = Array(arr.length()) { i ->
+            val line = arr.getJSONArray(i)
+            Array<Any?>(line.length()) { j -> line.get(j) }
         }
         // convert matrix to buttons
-        ExtraKeyButton[][] buttons = new ExtraKeyButton[matrix.length][];
-        for (int i = 0; i < matrix.length; i++) {
-            buttons[i] = new ExtraKeyButton[matrix[i].length];
-            for (int j = 0; j < matrix[i].length; j++) {
-                Object key = matrix[i][j];
-                JSONObject jobject = normalizeKeyConfig(key);
-                ExtraKeyButton button;
+        return Array(matrix.size) { i ->
+            Array(matrix[i].size) { j ->
+                val key = matrix[i][j]
+                val jobject = normalizeKeyConfig(key)
                 if (!jobject.has(ExtraKeyButton.KEY_POPUP)) {
                     // no popup
-                    button = new ExtraKeyButton(jobject, extraKeyDisplayMap, extraKeyAliasMap);
+                    ExtraKeyButton(jobject, extraKeyDisplayMap, extraKeyAliasMap)
                 } else {
                     // a popup
-                    JSONObject popupJobject = normalizeKeyConfig(jobject.get(ExtraKeyButton.KEY_POPUP));
-                    ExtraKeyButton popup = new ExtraKeyButton(popupJobject, extraKeyDisplayMap, extraKeyAliasMap);
-                    button = new ExtraKeyButton(jobject, popup, extraKeyDisplayMap, extraKeyAliasMap);
+                    val popupJobject = normalizeKeyConfig(jobject.get(ExtraKeyButton.KEY_POPUP))
+                    val popup = ExtraKeyButton(popupJobject, extraKeyDisplayMap, extraKeyAliasMap)
+                    ExtraKeyButton(jobject, popup, extraKeyDisplayMap, extraKeyAliasMap)
                 }
-                buttons[i][j] = button;
             }
         }
-        return buttons;
     }
 
     /**
      * Convert "value" -> {"key": "value"}. Required by
      * {@link ExtraKeyButton#ExtraKeyButton(JSONObject, ExtraKeyButton, ExtraKeysConstants.ExtraKeyDisplayMap, ExtraKeysConstants.ExtraKeyDisplayMap)}.
      */
-    private static JSONObject normalizeKeyConfig(Object key) throws JSONException {
-        JSONObject jobject;
-        if (key instanceof String) {
-            jobject = new JSONObject();
-            jobject.put(ExtraKeyButton.KEY_KEY_NAME, key);
-        } else if (key instanceof JSONObject) {
-            jobject = (JSONObject) key;
-        } else {
-            throw new JSONException("An key in the extra-key matrix must be a string or an object");
+    companion object {
+        private fun normalizeKeyConfig(key: Any?): JSONObject {
+            val jobject: JSONObject
+            if (key is String) {
+                jobject = JSONObject()
+                jobject.put(ExtraKeyButton.KEY_KEY_NAME, key)
+            } else if (key is JSONObject) {
+                jobject = key
+            } else {
+                throw JSONException("An key in the extra-key matrix must be a string or an object")
+            }
+            return jobject
         }
-        return jobject;
+
+        @NonNull
+        @JvmStatic
+        fun getCharDisplayMapForStyle(style: String?): ExtraKeysConstants.ExtraKeyDisplayMap {
+            // A null style threw NPE in the Java switch; !! keeps the throw.
+            return when (style!!) {
+                "arrows-only" -> EXTRA_KEY_DISPLAY_MAPS.ARROWS_ONLY_CHAR_DISPLAY
+                "arrows-all" -> EXTRA_KEY_DISPLAY_MAPS.LOTS_OF_ARROWS_CHAR_DISPLAY
+                "all" -> EXTRA_KEY_DISPLAY_MAPS.FULL_ISO_CHAR_DISPLAY
+                "none" -> ExtraKeysConstants.ExtraKeyDisplayMap()
+                else -> EXTRA_KEY_DISPLAY_MAPS.DEFAULT_CHAR_DISPLAY
+            }
+        }
     }
 
-    public ExtraKeyButton[][] getMatrix() {
-        return mButtons;
-    }
-
-    @NonNull
-    public static ExtraKeysConstants.ExtraKeyDisplayMap getCharDisplayMapForStyle(String style) {
-        switch(style) {
-            case "arrows-only":
-                return EXTRA_KEY_DISPLAY_MAPS.ARROWS_ONLY_CHAR_DISPLAY;
-            case "arrows-all":
-                return EXTRA_KEY_DISPLAY_MAPS.LOTS_OF_ARROWS_CHAR_DISPLAY;
-            case "all":
-                return EXTRA_KEY_DISPLAY_MAPS.FULL_ISO_CHAR_DISPLAY;
-            case "none":
-                return new ExtraKeysConstants.ExtraKeyDisplayMap();
-            default:
-                return EXTRA_KEY_DISPLAY_MAPS.DEFAULT_CHAR_DISPLAY;
-        }
+    fun getMatrix(): Array<Array<ExtraKeyButton>> {
+        return mButtons
     }
 }

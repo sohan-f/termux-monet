@@ -6,10 +6,10 @@ import android.view.View
 import com.google.android.material.button.MaterialButton
 import com.termux.shared.termux.extrakeys.ExtraKeyButton
 import com.termux.shared.termux.extrakeys.ExtraKeysView
+import com.termux.shared.termux.extrakeys.ExtraKeysConstants
 import com.termux.shared.termux.extrakeys.SpecialButton
 import com.termux.terminal.TerminalSession
 import com.termux.view.TerminalView
-import com.termux.shared.termux.extrakeys.ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS
 
 open class TerminalExtraKeys(private val mTerminalView: TerminalView) : ExtraKeysView.IExtraKeysView {
 
@@ -48,8 +48,8 @@ open class TerminalExtraKeys(private val mTerminalView: TerminalView) : ExtraKey
     }
 
     protected open fun onTerminalExtraKeyButtonClick(view: View?, key: String?, ctrlDown: Boolean, altDown: Boolean, shiftDown: Boolean, fnDown: Boolean) {
-        if (PRIMARY_KEY_CODES_FOR_STRINGS.containsKey(key)) {
-            val keyCode = PRIMARY_KEY_CODES_FOR_STRINGS[key]
+        if (ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS.containsKey(key)) {
+            val keyCode = ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS[key]
             if (keyCode == null)
                 return
             var metaState = 0

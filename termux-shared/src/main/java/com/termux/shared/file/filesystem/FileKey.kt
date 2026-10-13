@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,55 +22,27 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.termux.shared.file.filesystem;
+package com.termux.shared.file.filesystem
 
 /**
- * Defines the bits for use with the {@link FileAttributes#permissions()
- * permissions} attribute.
- *
- * <p> The {@link FileAttributes} class defines methods for manipulating
- * set of permissions.
- *
- * https://cs.android.com/android/platform/superproject/+/android-11.0.0_r3:libcore/ojluni/src/main/java/java/nio/file/attribute/PosixFilePermission.java
- *
- * @since 1.7
+ * Container for device/inode to uniquely identify file.
+ * https://cs.android.com/android/platform/superproject/+/android-11.0.0_r3:libcore/ojluni/src/main/java/sun/nio/fs/UnixFileKey.java
  */
-public enum FilePermission {
+class FileKey internal constructor(private val st_dev: Long, private val st_ino: Long) {
 
-    /**
-     * Read permission, owner.
-     */
-    OWNER_READ,
-    /**
-     * Write permission, owner.
-     */
-    OWNER_WRITE,
-    /**
-     * Execute/search permission, owner.
-     */
-    OWNER_EXECUTE,
-    /**
-     * Read permission, group.
-     */
-    GROUP_READ,
-    /**
-     * Write permission, group.
-     */
-    GROUP_WRITE,
-    /**
-     * Execute/search permission, group.
-     */
-    GROUP_EXECUTE,
-    /**
-     * Read permission, others.
-     */
-    OTHERS_READ,
-    /**
-     * Write permission, others.
-     */
-    OTHERS_WRITE,
-    /**
-     * Execute/search permission, others.
-     */
-    OTHERS_EXECUTE
+    override fun hashCode(): Int {
+        return (st_dev xor (st_dev ushr 32)).toInt() + (st_ino xor (st_ino ushr 32)).toInt()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other === this)
+            return true
+        if (other !is FileKey)
+            return false
+        return this.st_dev == other.st_dev && this.st_ino == other.st_ino
+    }
+
+    override fun toString(): String {
+        return "(dev=" + java.lang.Long.toHexString(st_dev) + ",ino=" + st_ino + ')'
+    }
 }

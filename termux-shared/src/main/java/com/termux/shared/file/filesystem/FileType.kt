@@ -1,9 +1,9 @@
-package com.termux.shared.file.filesystem;
+package com.termux.shared.file.filesystem
 
 /**
  * The {@link Enum} that defines file types.
  */
-public enum FileType {
+enum class FileType(private val typeName: String, private val typeValue: Int) {
 
     // 00000000
     NO_EXIST("no exist", 0),
@@ -24,20 +24,11 @@ public enum FileType {
     // 10000000
     UNKNOWN("unknown", 128);
 
-    private final String name;
-
-    private final int value;
-
-    FileType(final String name, final int value) {
-        this.name = name;
-        this.value = value;
+    fun getName(): String {
+        return typeName
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public int getValue() {
-        return value;
+    fun getValue(): Int {
+        return typeValue
     }
 }

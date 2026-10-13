@@ -25,7 +25,6 @@ import com.termux.shared.file.FileUtils
 import com.termux.shared.logger.Logger
 import java.util.ArrayList
 import java.util.Arrays
-import java.util.List
 
 class PermissionUtils {
 
@@ -206,7 +205,10 @@ class PermissionUtils {
             @NonNull context: Context, filePath: String?, requestCode: Int,
             prioritizeManageExternalStoragePermission: Boolean, showErrorMessage: Boolean): Boolean {
             // If path is under primary external storage directory, then check for missing permissions.
-            if (!FileUtils.isPathInDirPaths(filePath, Arrays.asList(Environment.getExternalStorageDirectory().absolutePath, "/sdcard"), true))
+            // listOf with an explicit nullable arg: Arrays.asList infers a
+            // flexible String! argument that never conforms to List<String?>
+            // as a type argument, breaking compilation. Behaviour is identical.
+            if (!FileUtils.isPathInDirPaths(filePath, listOf<String?>(Environment.getExternalStorageDirectory().absolutePath, "/sdcard"), true))
                 return true
 
             return checkAndRequestLegacyOrManageExternalStoragePermission(context, requestCode, prioritizeManageExternalStoragePermission, showErrorMessage)

@@ -350,8 +350,9 @@ class ReportActivity : AppCompatActivity() {
                 return
             // Extra protection for mainly if someone set `exported="true"` for ReportActivityBroadcastReceiver
             val reportInfoDirectoryPath = getReportInfoDirectoryPath(context)
+            // getCanonicalPath never returns null, so no null check is needed.
             val canonicalPath = FileUtils.getCanonicalPath(reportInfoFilePath, null)
-            if (canonicalPath != null && canonicalPath != reportInfoDirectoryPath && canonicalPath.startsWith(reportInfoDirectoryPath + "/")) {
+            if (canonicalPath != reportInfoDirectoryPath && canonicalPath.startsWith(reportInfoDirectoryPath + "/")) {
                 Logger.logVerbose(LOG_TAG, "Deleting " + ReportInfo::class.java.simpleName + " serialized object file at path \"" + canonicalPath + "\"")
                 val error = FileUtils.deleteRegularFile(ReportInfo::class.java.simpleName, canonicalPath, true)
                 if (error != null) {

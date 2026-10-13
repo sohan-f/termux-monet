@@ -15,7 +15,8 @@ open class TerminalExtraKeys(private val mTerminalView: TerminalView) : ExtraKey
 
     override fun onExtraKeyButtonClick(view: View?, buttonInfo: ExtraKeyButton?, button: MaterialButton?) {
         // Null buttonInfo threw NPE here in Java as well.
-        if (buttonInfo!!.isMacro) {
+        // Explicit call: isMacro() maps to the private macro property.
+        if (buttonInfo!!.isMacro()) {
             // Kotlin split is literal (Java split took a regex), but " " as
             // a regex is exactly a literal space; any trailing "" iterations
             // are no-ops below, so outcomes cannot differ.

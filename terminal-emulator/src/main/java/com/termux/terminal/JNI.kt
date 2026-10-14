@@ -29,7 +29,7 @@ class JNI {
          * slave device counterpart (/dev/pts/$N) and have it as stdint, stdout and stderr.
          */
         @JvmStatic
-        external fun createSubprocess(cmd: String, cwd: String, args: Array<String>, envVars: Array<String>, processId: IntArray, rows: Int, columns: Int, cellWidth: Int, cellHeight: Int): Int
+        external fun createSubprocess(cmd: String?, cwd: String?, args: Array<String?>?, envVars: Array<String>?, processId: IntArray, rows: Int, columns: Int, cellWidth: Int, cellHeight: Int): Int
 
         /** Set the window size for a given pty, which allows connected programs to learn how large their screen is. */
         @JvmStatic

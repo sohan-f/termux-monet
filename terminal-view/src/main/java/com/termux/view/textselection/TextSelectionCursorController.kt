@@ -94,7 +94,7 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
         mSelX2 = mSelX1
         mSelY1 = columnAndRow[1]
         mSelY2 = mSelY1
-        val screen = terminalView.mEmulator!!.getScreen()
+        val screen = terminalView.mEmulator!!.screen
         if (" " != screen.getSelectedText(mSelX1, mSelY1, mSelX1, mSelY1)) {
             // Selecting something other than whitespace. Expand to word.
             while (mSelX1 > 0 && "" != screen.getSelectedText(mSelX1 - 1, mSelY1, mSelX1 - 1, mSelY1)) {
@@ -202,7 +202,7 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
     }
 
     override fun updatePosition(handle: TextSelectionHandleView?, x: Int, y: Int) {
-        val screen = terminalView.mEmulator!!.getScreen()
+        val screen = terminalView.mEmulator!!.screen
         val scrollRows = screen.getActiveRows() - terminalView.mEmulator!!.mRows
         if (handle == mStartHandle) {
             mSelX1 = terminalView.getCursorX(x.toFloat())

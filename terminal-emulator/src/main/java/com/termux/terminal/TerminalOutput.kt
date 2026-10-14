@@ -25,7 +25,7 @@ abstract class TerminalOutput {
     /**
      * Notify the terminal client that the terminal title has changed.
      */
-    abstract fun titleChanged(oldTitle: String, newTitle: String)
+    abstract fun titleChanged(oldTitle: String?, newTitle: String?)
 
     /**
      * Notify the terminal client that text should be copied to clipboard.

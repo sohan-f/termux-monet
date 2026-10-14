@@ -62,7 +62,7 @@ class ShellUtils {
             if (terminalSession == null)
                 return null
             val terminalEmulator = terminalSession.getEmulator() ?: return null
-            val terminalBuffer = terminalEmulator.getScreen() ?: return null
+            val terminalBuffer = terminalEmulator.screen
             var transcriptText = if (linesJoined)
                 terminalBuffer.getTranscriptTextWithFullLinesJoined()
             else

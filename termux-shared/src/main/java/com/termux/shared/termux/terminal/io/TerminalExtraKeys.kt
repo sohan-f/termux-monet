@@ -72,7 +72,7 @@ open class TerminalExtraKeys(private val mTerminalView: TerminalView) : ExtraKey
                     mTerminalView.inputCodePoint(TerminalView.KEY_EVENT_SOURCE_VIRTUAL_KEYBOARD, codePoint, ctrlDown, altDown)
                 }
             } else {
-                val session: TerminalSession? = mTerminalView.currentSession
+                val session: TerminalSession? = mTerminalView.getCurrentSession()
                 if (session != null && nonNullKey.isNotEmpty())
                     session.write(nonNullKey)
             }

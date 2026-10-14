@@ -94,13 +94,13 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
         mSelX2 = mSelX1
         mSelY1 = columnAndRow[1]
         mSelY2 = mSelY1
-        val screen = terminalView.mEmulator.getScreen()
+        val screen = terminalView.mEmulator!!.getScreen()
         if (" " != screen.getSelectedText(mSelX1, mSelY1, mSelX1, mSelY1)) {
             // Selecting something other than whitespace. Expand to word.
             while (mSelX1 > 0 && "" != screen.getSelectedText(mSelX1 - 1, mSelY1, mSelX1 - 1, mSelY1)) {
                 mSelX1--
             }
-            while (mSelX2 < terminalView.mEmulator.mColumns - 1 && "" != screen.getSelectedText(mSelX2 + 1, mSelY1, mSelX2 + 1, mSelY1)) {
+            while (mSelX2 < terminalView.mEmulator!!.mColumns - 1 && "" != screen.getSelectedText(mSelX2 + 1, mSelY1, mSelX2 + 1, mSelY1)) {
                 mSelX2++
             }
         }
@@ -130,12 +130,12 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
                 when (item.itemId) {
                     ACTION_COPY -> {
                         val selectedText = getSelectedText()
-                        terminalView.mTermSession.onCopyTextToClipboard(selectedText)
+                        terminalView.mTermSession!!.onCopyTextToClipboard(selectedText)
                         terminalView.stopTextSelectionMode()
                     }
                     ACTION_PASTE -> {
                         terminalView.stopTextSelectionMode()
-                        terminalView.mTermSession.onPasteTextFromClipboard()
+                        terminalView.mTermSession!!.onPasteTextFromClipboard()
                     }
                     ACTION_MORE -> {
                         // We first store the selected text in case TerminalViewClient needs the
@@ -178,10 +178,10 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
             }
 
             override fun onGetContentRect(mode: ActionMode, view: View, outRect: Rect) {
-                val x1 = Math.round(mSelX1.toFloat() * terminalView.mRenderer.getFontWidth())
-                val x2 = Math.round(mSelX2.toFloat() * terminalView.mRenderer.getFontWidth())
-                val y1 = Math.round(((mSelY1 - terminalView.getTopRow()) * terminalView.mRenderer.getFontLineSpacing()).toFloat())
-                val y2 = Math.round(((mSelY2 + 1 - terminalView.getTopRow()) * terminalView.mRenderer.getFontLineSpacing()).toFloat())
+                val x1 = Math.round(mSelX1.toFloat() * terminalView.mRenderer!!.getFontWidth())
+                val x2 = Math.round(mSelX2.toFloat() * terminalView.mRenderer!!.getFontWidth())
+                val y1 = Math.round(((mSelY1 - terminalView.getTopRow()) * terminalView.mRenderer!!.getFontLineSpacing()).toFloat())
+                val y2 = Math.round(((mSelY2 + 1 - terminalView.getTopRow()) * terminalView.mRenderer!!.getFontLineSpacing()).toFloat())
                 var xx1 = x1
                 var xx2 = x2
                 if (xx1 > xx2) {
@@ -190,7 +190,7 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
                     xx2 = tmp
                 }
                 val terminalBottom = terminalView.getBottom()
-                var top = y1 + terminalView.mRenderer.getFontLineSpacingAndAscent()
+                var top = y1 + terminalView.mRenderer!!.getFontLineSpacingAndAscent()
                 var bottom = y2 + mHandleHeight
                 if (top > terminalBottom)
                     top = terminalBottom
@@ -202,8 +202,8 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
     }
 
     override fun updatePosition(handle: TextSelectionHandleView?, x: Int, y: Int) {
-        val screen = terminalView.mEmulator.getScreen()
-        val scrollRows = screen.getActiveRows() - terminalView.mEmulator.mRows
+        val screen = terminalView.mEmulator!!.getScreen()
+        val scrollRows = screen.getActiveRows() - terminalView.mEmulator!!.mRows
         if (handle == mStartHandle) {
             mSelX1 = terminalView.getCursorX(x.toFloat())
             mSelY1 = terminalView.getCursorY(y.toFloat())
@@ -212,8 +212,8 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
             }
             if (mSelY1 < -scrollRows) {
                 mSelY1 = -scrollRows
-            } else if (mSelY1 > terminalView.mEmulator.mRows - 1) {
-                mSelY1 = terminalView.mEmulator.mRows - 1
+            } else if (mSelY1 > terminalView.mEmulator!!.mRows - 1) {
+                mSelY1 = terminalView.mEmulator!!.mRows - 1
             }
             if (mSelY1 > mSelY2) {
                 mSelY1 = mSelY2
@@ -221,14 +221,14 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
             if (mSelY1 == mSelY2 && mSelX1 > mSelX2) {
                 mSelX1 = mSelX2
             }
-            if (!terminalView.mEmulator.isAlternateBufferActive()) {
+            if (!terminalView.mEmulator!!.isAlternateBufferActive()) {
                 var topRow = terminalView.getTopRow()
                 if (mSelY1 <= topRow) {
                     topRow--
                     if (topRow < -scrollRows) {
                         topRow = -scrollRows
                     }
-                } else if (mSelY1 >= topRow + terminalView.mEmulator.mRows) {
+                } else if (mSelY1 >= topRow + terminalView.mEmulator!!.mRows) {
                     topRow++
                     if (topRow > 0) {
                         topRow = 0
@@ -245,8 +245,8 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
             }
             if (mSelY2 < -scrollRows) {
                 mSelY2 = -scrollRows
-            } else if (mSelY2 > terminalView.mEmulator.mRows - 1) {
-                mSelY2 = terminalView.mEmulator.mRows - 1
+            } else if (mSelY2 > terminalView.mEmulator!!.mRows - 1) {
+                mSelY2 = terminalView.mEmulator!!.mRows - 1
             }
             if (mSelY1 > mSelY2) {
                 mSelY2 = mSelY1
@@ -254,14 +254,14 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
             if (mSelY1 == mSelY2 && mSelX1 > mSelX2) {
                 mSelX2 = mSelX1
             }
-            if (!terminalView.mEmulator.isAlternateBufferActive()) {
+            if (!terminalView.mEmulator!!.isAlternateBufferActive()) {
                 var topRow = terminalView.getTopRow()
                 if (mSelY2 <= topRow) {
                     topRow--
                     if (topRow < -scrollRows) {
                         topRow = -scrollRows
                     }
-                } else if (mSelY2 >= topRow + terminalView.mEmulator.mRows) {
+                } else if (mSelY2 >= topRow + terminalView.mEmulator!!.mRows) {
                     topRow++
                     if (topRow > 0) {
                         topRow = 0
@@ -343,7 +343,7 @@ class TextSelectionCursorController(private val terminalView: TerminalView) : Cu
      * Get the currently selected text.
      */
     fun getSelectedText(): String? {
-        return terminalView.mEmulator.getSelectedText(mSelX1, mSelY1, mSelX2, mSelY2)
+        return terminalView.mEmulator!!.getSelectedText(mSelX1, mSelY1, mSelX2, mSelY2)
     }
 
     /**

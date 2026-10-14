@@ -51,7 +51,9 @@ class SpecialButtonState(extraKeysView: ExtraKeysView?) {
         // Null view threw here in Java as well; !! keeps the NPE.
         val view = mExtraKeysView!!
         for (button in buttons) {
-            button.setTextColor(if (value) view.buttonActiveTextColor else view.buttonTextColor)
+            // Explicit getters: ExtraKeysView is Kotlin now, so property
+            // syntax no longer resolves these Java-style functions.
+            button.setTextColor(if (value) view.getButtonActiveTextColor() else view.getButtonTextColor())
         }
     }
 

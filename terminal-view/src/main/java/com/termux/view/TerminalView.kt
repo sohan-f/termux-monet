@@ -171,7 +171,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
                 return false
             }
 
-            override fun onSingleTapUp(event: MotionEvent?): Boolean {
+            override fun onSingleTapUp(e: MotionEvent?): Boolean {
                 if (mEmulator == null) return true
 
                 if (isSelectingText()) {
@@ -179,14 +179,14 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
                     return true
                 }
                 requestFocus()
-                mClient!!.onSingleTapUp(event)
+                mClient!!.onSingleTapUp(e)
                 return true
             }
 
-            override fun onScroll(event: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
+            override fun onScroll(e2: MotionEvent?, dx: Float, dy: Float): Boolean {
                 val emulator = mEmulator ?: return true
                 // Null event threw NPE below in Java as well.
-                val e = event!!
+                val e = e2!!
                 if (emulator.isMouseTrackingActive() && e.isFromSource(InputDevice.SOURCE_MOUSE)) {
                     // If moving with mouse pointer while pressing button, report that instead of scroll.
                     // This means that we never report moving with button press-events for touch input,
@@ -195,7 +195,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
                     sendMouseEventCode(e, TerminalEmulator.MOUSE_LEFT_BUTTON_MOVED, true)
                 } else {
                     scrolledWithFinger = true
-                    var y = distanceY + mScrollRemainder
+                    var y = dy + mScrollRemainder
                     val renderer = mRenderer!!
                     val deltaRows = (y / renderer.mFontLineSpacing.toFloat()).toInt()
                     mScrollRemainder = y - (deltaRows * renderer.mFontLineSpacing).toFloat()
@@ -211,7 +211,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
                 return true
             }
 
-            override fun onFling(event: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
+            override fun onFling(e: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
                 val emulator = mEmulator ?: return true
                 // Do not start scrolling until last fling has been taken care of:
                 if (!mScroller.isFinished()) return true
@@ -225,7 +225,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
                 }
 
                 // Null event threw NPE below in Java as well.
-                val e = event!!
+                val event = e!!
                 post(object : Runnable {
                     private var mLastY = 0
 
@@ -238,7 +238,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
                         val more = mScroller.computeScrollOffset()
                         val newY = mScroller.currY
                         val diff = if (mouseTrackingAtStartOfFling) newY - mLastY else newY - mTopRow
-                        doScroll(e, diff)
+                        doScroll(event, diff)
                         mLastY = newY
                         if (more) post(this)
                     }
@@ -257,17 +257,17 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
                 return false
             }
 
-            override fun onDoubleTap(event: MotionEvent?): Boolean {
+            override fun onDoubleTap(e: MotionEvent?): Boolean {
                 // Do not treat is as a single confirmed tap - it may be followed by zoom.
                 return false
             }
 
-            override fun onLongPress(event: MotionEvent?) {
+            override fun onLongPress(e: MotionEvent?) {
                 if (mGestureRecognizer.isInProgress()) return
-                if (mClient!!.onLongPress(event)) return
+                if (mClient!!.onLongPress(e)) return
                 if (!isSelectingText()) {
                     performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                    startTextSelectionMode(event)
+                    startTextSelectionMode(e)
                 }
             }
         })
@@ -804,6 +804,9 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
      * Get overlay keyboard layout
      * https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/input/InputManagerService.java;l=2158
      */
+    // ACTION_MULTIPLE/characters are deprecated but still delivered by some IMEs for
+    // commitText-style bulk input, so their use here is intentional.
+    @Suppress("DEPRECATION")
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if (TERMINAL_VIEW_KEY_LOGGING_ENABLED)
             mClient!!.logInfo(LOG_TAG, "onKeyDown(keyCode=" + keyCode + ", isSystem()=" + event.isSystem() + ", event=" + event + ")")

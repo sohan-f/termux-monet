@@ -11,7 +11,7 @@ open class TermuxTerminalSessionClientBase : TerminalSessionClient {
     override fun onTextChanged(@NonNull changedSession: TerminalSession) {
     }
 
-    override fun onTitleChanged(@NonNull updatedSession: TerminalSession) {
+    override fun onTitleChanged(@NonNull changedSession: TerminalSession) {
     }
 
     override fun onSessionFinished(@NonNull finishedSession: TerminalSession) {
@@ -26,7 +26,7 @@ open class TermuxTerminalSessionClientBase : TerminalSessionClient {
     override fun onBell(@NonNull session: TerminalSession) {
     }
 
-    override fun onColorsChanged(@NonNull changedSession: TerminalSession) {
+    override fun onColorsChanged(@NonNull session: TerminalSession) {
     }
 
     override fun onTerminalCursorStateChange(state: Boolean) {

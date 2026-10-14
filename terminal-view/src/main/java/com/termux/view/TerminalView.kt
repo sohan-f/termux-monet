@@ -954,7 +954,8 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
         if (handleKeyCodeAction(keyCode, keyMod))
             return true
 
-        val term = mTermSession!!.getEmulator()
+        // Null emulator threw NPE here in Java as well.
+        val term = mTermSession!!.getEmulator()!!
         val code = KeyHandler.getCode(keyCode, keyMod, term.isCursorKeysApplicationMode(), term.isKeypadApplicationMode())
         if (code == null) return false
         mTermSession!!.write(code)

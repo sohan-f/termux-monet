@@ -186,9 +186,9 @@ class TermuxSession private constructor(
      */
     fun finish() {
         // If process is still running, then ignore the call
-        if (mTerminalSession.isRunning)
+        if (mTerminalSession.isRunning())
             return
-        val exitCode = mTerminalSession.exitStatus
+        val exitCode = mTerminalSession.getExitStatus()
         if (exitCode == 0)
             Logger.logDebug(LOG_TAG, "The \"" + mExecutionCommand.getCommandIdAndLabelLogString() + "\" TermuxSession exited normally")
         else

@@ -67,8 +67,6 @@ class ShellUtils {
                 terminalBuffer.getTranscriptTextWithFullLinesJoined()
             else
                 terminalBuffer.getTranscriptTextWithoutJoinedLines()
-            if (transcriptText == null)
-                return null
             if (trim)
                 transcriptText = transcriptText.trim()
             return transcriptText

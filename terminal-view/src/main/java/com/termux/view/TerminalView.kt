@@ -221,7 +221,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
                 if (mouseTrackingAtStartOfFling) {
                     mScroller.fling(0, 0, 0, -(velocityY * SCALE).toInt(), 0, 0, -emulator.mRows / 2, emulator.mRows / 2)
                 } else {
-                    mScroller.fling(0, mTopRow, 0, -(velocityY * SCALE).toInt(), 0, 0, -emulator.screen.activeTranscriptRows, 0)
+                    mScroller.fling(0, mTopRow, 0, -(velocityY * SCALE).toInt(), 0, 0, -emulator.screen.getActiveTranscriptRows(), 0)
                 }
 
                 // Null event threw NPE below in Java as well.
@@ -445,7 +445,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
 
     override fun computeVerticalScrollRange(): Int {
         val emulator = mEmulator ?: return 1
-        return emulator.screen.activeRows
+        return emulator.screen.getActiveRows()
     }
 
     override fun computeVerticalScrollExtent(): Int {
@@ -455,7 +455,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
 
     override fun computeVerticalScrollOffset(): Int {
         val emulator = mEmulator ?: return 1
-        return emulator.screen.activeRows + mTopRow - emulator.mRows
+        return emulator.screen.getActiveRows() + mTopRow - emulator.mRows
     }
 
     fun onScreenUpdated() {
@@ -466,7 +466,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
         var skipScrolling = skipScrolling
         val emulator = mEmulator ?: return
 
-        val rowsInHistory = emulator.screen.activeTranscriptRows
+        val rowsInHistory = emulator.screen.getActiveTranscriptRows()
         if (mTopRow < -rowsInHistory) setTopRow(-rowsInHistory)
 
         if (isSelectingText() || emulator.isAutoScrollDisabled()) {
@@ -608,7 +608,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
                 // e.g. less, which shifts to the alt screen without mouse handling.
                 handleKeyCode(if (up) KeyEvent.KEYCODE_DPAD_UP else KeyEvent.KEYCODE_DPAD_DOWN, 0)
             } else {
-                setTopRow(Math.min(0, Math.max(-(emulator.screen.activeTranscriptRows), mTopRow + if (up) -1 else 1)))
+                setTopRow(Math.min(0, Math.max(-(emulator.screen.getActiveTranscriptRows()), mTopRow + if (up) -1 else 1)))
                 if (!awakenScrollBars()) invalidate()
             }
         }
@@ -1042,7 +1042,7 @@ class TerminalView(context: Context, attributes: AttributeSet?) : View(context, 
             var topRow = 0
             val currentEmulator = mEmulator
             if (currentEmulator != null) {
-                val rowsInHistory = currentEmulator.screen.activeTranscriptRows
+                val rowsInHistory = currentEmulator.screen.getActiveTranscriptRows()
                 val cachedTopRow = currentEmulator.getTopRow()
                 if (cachedTopRow >= -rowsInHistory) {
                     topRow = cachedTopRow

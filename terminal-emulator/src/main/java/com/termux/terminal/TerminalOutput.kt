@@ -1,46 +1,46 @@
-package com.termux.terminal;
+package com.termux.terminal
 
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.StandardCharsets
 
 /**
  * A client which receives callbacks from events triggered by feeding input to a {@link TerminalEmulator}.
  */
-public abstract class TerminalOutput {
+abstract class TerminalOutput {
 
     /**
      * Write a string using the UTF-8 encoding to the terminal client.
      */
-    public final void write(String data) {
+    fun write(data: String?) {
         if (data == null)
-            return;
-        byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-        write(bytes, 0, bytes.length);
+            return
+        val bytes = data.toByteArray(StandardCharsets.UTF_8)
+        write(bytes, 0, bytes.size)
     }
 
     /**
      * Write bytes to the terminal client.
      */
-    public abstract void write(byte[] data, int offset, int count);
+    abstract fun write(data: ByteArray, offset: Int, count: Int)
 
     /**
      * Notify the terminal client that the terminal title has changed.
      */
-    public abstract void titleChanged(String oldTitle, String newTitle);
+    abstract fun titleChanged(oldTitle: String, newTitle: String)
 
     /**
      * Notify the terminal client that text should be copied to clipboard.
      */
-    public abstract void onCopyTextToClipboard(String text);
+    abstract fun onCopyTextToClipboard(text: String?)
 
     /**
      * Notify the terminal client that text should be pasted from clipboard.
      */
-    public abstract void onPasteTextFromClipboard();
+    abstract fun onPasteTextFromClipboard()
 
     /**
      * Notify the terminal client that a bell character (ASCII 7, bell, BEL, \a, ^G)) has been received.
      */
-    public abstract void onBell();
+    abstract fun onBell()
 
-    public abstract void onColorsChanged();
+    abstract fun onColorsChanged()
 }

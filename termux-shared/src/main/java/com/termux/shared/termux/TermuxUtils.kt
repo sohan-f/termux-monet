@@ -382,9 +382,11 @@ class TermuxUtils {
                     // the lookups below all miss and nothing is appended).
                     // Stdlib isNullOrEmpty (same check as DataUtils) smart-casts
                     // callingPackageName to non-null below.
+                    // Stdlib isNullOrEmpty (same check as DataUtils) smart-casts
+                    // callingPackageName to non-null below.
                     if (!callingPackageName.isNullOrEmpty() && currentPackageContext != null) {
                         var callingPackageAppInfo: String? = null
-                        if (TermuxConstants.TERMUX_PLUGIN_APP_PACKAGE_NAMES_LIST.contains(callingPackageName)) {
+                        if (TermuxConstants.TERMUX_PLUGIN_APP_PACKAGE_NAMES_LIST?.contains(callingPackageName) == true) {
                             val termuxPluginAppContext = PackageUtils.getContextForPackage(currentPackageContext, callingPackageName)
                             if (termuxPluginAppContext != null)
                                 appInfo.append(getAppInfoMarkdownString(termuxPluginAppContext, false))
